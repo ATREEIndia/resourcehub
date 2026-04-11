@@ -46,7 +46,7 @@ const BannerWithSearch = () => {
         <div className='w-full h-70  p-2 relative  flex items-center justify-center '>
 
             {BannerImages.map((img, i) => (
-                <Image className={`brightness-60 object-cover transform duration-400 ${i === currentImageIndex ? "opacity-100" : "opacity-0"}`} key={i} alt={''} src={img} fill />
+                <Image className={`brightness-60 object-cover object-top transform duration-400 ${i === currentImageIndex ? "opacity-100" : "opacity-0"}`} key={i} alt={''} src={img} fill />
 
             ))}
 

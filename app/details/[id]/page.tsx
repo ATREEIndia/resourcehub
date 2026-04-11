@@ -48,6 +48,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
 
     useEffect(() => {
         if(!fcData || !currentAsset) return
+        setCollectionList([])
         fcData.map((fc) => {
             if (fc.assets.includes(currentAsset.id)) {
                 setCollectionList((prev)=>[...prev,fc.id])
@@ -206,8 +207,8 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
                     <div className='mt-5 select-none'>
                         <h1 className='font-medium'>Collections</h1>
                         <div className=' flex gap-2'>
-                            {collectionList.map((c) => (
-                                <div key={c} className='flex gap-1 p-1 bg-orange-100 items-center text-xs rounded-lg'>
+                            {collectionList.map((c,i) => (
+                                <div key={i} className='flex gap-1 p-1 bg-orange-100 items-center text-xs rounded-lg'>
                                     <Package/>
                                     <p>{c}</p>
                                 </div>
