@@ -18,6 +18,7 @@ const Navbar = () => {
 
     const manageUploadForm = () => {
         setOpenUploadForm(!openUploadForm)
+        setMobileMenu(false)
     }
 
 
@@ -97,7 +98,7 @@ const Navbar = () => {
                             <p>Liked</p>
 
                         </a>
-                        <div onClick={() => signOut(auth)} className='flex gap-1 text-red-800 py-2 border-gray-300'>
+                        <div onClick={() => {signOut(auth); setMobileMenu(false)}} className='flex gap-1 text-red-800 py-2 border-gray-300'>
                             <LogOut size={15} />
                             <p>SignOut</p>
 
