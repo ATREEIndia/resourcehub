@@ -5,6 +5,7 @@ import { useMyContext } from '../Context/MyContext';
 import ResultHero from '../results/ResultHero';
 import lottieSearch from '@/public/searching.json'
 import Lottie from 'lottie-react';
+import { Suspense } from 'react'
 
 const page = () => {
     const searchParams = useSearchParams();
@@ -53,7 +54,8 @@ const page = () => {
 
 
     return (
-        <div className='w-full h-full p-4 min-h-screen'>
+        <Suspense>
+             <div className='w-full h-full p-4 min-h-screen'>
             <div className='flex flex-col gap-1'>
                 <h1 className='text-2xl'>Collection <span className='text-blue-500 font-medium'>{fcId}</span></h1>
                 <p className='text-xs'>Manage and view the featured Collection.</p>
@@ -82,6 +84,9 @@ const page = () => {
 
 
         </div>
+
+        </Suspense>
+       
     )
 }
 

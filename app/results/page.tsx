@@ -6,6 +6,7 @@ import ResultHero from './ResultHero';
 import { useMyContext } from '../Context/MyContext';
 import lottieSearching from '@/public/searching.json'
 import Lottie from 'lottie-react';
+import { Suspense } from 'react'
 
 const page = () => {
     const { dbData } = useMyContext()
@@ -81,7 +82,8 @@ const page = () => {
 
 
     return (
-        <div className='w-full h-full'>
+        <Suspense>
+             <div className='w-full h-full'>
             
 
             <div className='w-full  p-4 mt-5  text-xs'>
@@ -125,6 +127,8 @@ const page = () => {
 
 
         </div>
+        </Suspense>
+       
     )
 }
 

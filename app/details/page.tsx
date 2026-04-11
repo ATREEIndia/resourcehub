@@ -7,6 +7,7 @@ import { AlignRight, Download, Edit, Package, Trash2Icon, View } from 'lucide-re
 import { ref, remove, update } from 'firebase/database'
 import { db, m_firestore } from '../Components/MyFirebase'
 import { doc, setDoc } from 'firebase/firestore'
+import { Suspense } from 'react'
 
 const page = () => {
     const { dbData, user, fcData } = useMyContext()
@@ -156,7 +157,8 @@ const page = () => {
     }
 
     return (
-        <div className='w-full h-full flex justify-center items-center min-h-screen bg-gray-200'>
+        <Suspense>
+            <div className='w-full h-full flex justify-center items-center min-h-screen bg-gray-200'>
             <div className='w-4/5 bg-white p-4 rounded-xl grid grid-cols-2'>
 
                 <div className='w-full h-full max-h-[80vh]'>
@@ -389,6 +391,8 @@ const page = () => {
 
 
         </div>
+        </Suspense>
+        
     )
 }
 
