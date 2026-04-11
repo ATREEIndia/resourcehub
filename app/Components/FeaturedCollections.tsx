@@ -43,7 +43,7 @@ const FeaturedCollections = () => {
             </div>
 
 
-            <div className='w-full h-full grid sm:grid-cols-2 md:grid-cols-4  p-4 gap-5  '>
+            <div className='w-full h-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4  p-4 gap-5  '>
                 {fcData.map((fc, i) => {
                     const assetsArray = fc.assets.length < 2 ? [] : fc.assets.split(",")
                     let thumnailUrl = `https://digispace-atree.s3.ap-south-1.amazonaws.com/assets/images/raw/${fc.assets.split(",")[0]}`
@@ -61,7 +61,7 @@ const FeaturedCollections = () => {
 
 
 
-                    return <div onClick={() => openCollection(fc.id)} key={i} className='w-full h-full flex gap-2 items-center hover:bg-blue-100 rounded-xl select-none cursor-pointer'>
+                    return <div onClick={() => openCollection(fc.id)} key={i} className='w-full h-full flex flex-col sm:flex-row gap-2 items-center hover:bg-blue-100 rounded-xl select-none cursor-pointer'>
                         <div className='w-20 h-20 '>
                             <img className={`object-cover w-full h-full rounded-xl ${dataType === 'image' ? '' : 'hidden'}`} src={thumnailUrl} alt=""
                                 onError={(e) => (e.target as HTMLImageElement).src = "https://cdn.pixabay.com/photo/2014/04/03/00/33/box-308680_1280.png"} />

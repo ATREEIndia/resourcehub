@@ -89,7 +89,7 @@ const querry = decodeURIComponent(query);
 
             <div className='w-full  p-4 mt-5  text-xs'>
                 <h1 className='px-2'>Try another search term</h1>
-                <div className='w-1/4 border flex items-center border-gray-200 rounded-xl  bg-gray-100'> 
+                <div className='sm:w-1/4 border flex items-center border-gray-200 rounded-xl  bg-gray-100'> 
                   <input onKeyDown={(e)=>e.key ==="Enter"?handleNewSearch():null} onChange={(e)=>setNewQuerry(e.target.value)} value={newQuerry}  className='flex-1 outline-none p-2 ' type="text" />
                   <div onClick={handleNewSearch} className='p-2 bg-blue-600 rounded-r-xl text-xs text-white select-none cursor-pointer active:scale-95 hover:bg-blue-800'>Search</div>
 

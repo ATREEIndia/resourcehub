@@ -483,16 +483,16 @@ const UploadForm = ({ manageUploadForm }: probs) => {
 
 
                     {isNext &&
-                        <div className='w-full flex gap-2  h-full overflow-hidden'>
+                        <div className='w-full flex flex-col sm:flex-row gap-2 max-h-[80vh]  h-full overflow-y-scroll sm:overflow-hidden scrollbar-hidden'>
 
                             {/* left */}
 
 
-                            <div className='w-1/3 max-h-2/3 py-4'>
+                            <div className='sm:w-1/3 max-h-2/3 py-4'>
                                 <h1 className='font-semibold mb-2 px-4'>Selected Files</h1>
 
 
-                                <div className='flex flex-col gap-3 h-full overflow-y-scroll py-2 w-full px-4  no-scrollbar '>
+                                <div className='flex flex-col gap-3 h-full max-h-[70vh] overflow-y-scroll py-2 w-full px-4   '>
                                     {selectedFiles.map((file, i) => (
                                         <div onClick={() => setActiveFileIndex(i)} key={i} className={`p-2 border rounded-xl flex flex-col gap-1 select-none cursor-pointer ${activeFileIndex === i ? "boorder-2 border-blue-100 bg-blue-50" : ""}`}>
 
@@ -550,7 +550,7 @@ const UploadForm = ({ manageUploadForm }: probs) => {
                             </div>
 
 
-                            <div className='border-l-2 border-gray-200 flex-flex-col flex-1 max-h-2/3  py-4'>
+                            <div className='sm:border-l-2 border-gray-200 flex-flex-col flex-1 max-h-2/3  py-4'>
 
                                 <div className='w-full h-50 bg-gray-50'>
                                     {activeFile.fileType == 'image' &&

@@ -161,7 +161,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
     return (
         
             <div className='w-full h-full flex justify-center items-center min-h-screen bg-gray-200'>
-            <div className='w-4/5 bg-white p-4 rounded-xl grid grid-cols-2'>
+            <div className='SM:w-4/5 bg-white p-4 rounded-xl grid sm:grid-cols-2'>
 
                 <div className='w-full h-full max-h-[80vh]'>
                     {currentAsset.fileType === 'image' &&
@@ -177,7 +177,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
 
                 {/* right side */}
 
-                <div className='p-2 px-4 text-sm flex flex-col w-full'>
+                <div className='p-2 px-4 text-sm flex flex-col w-full gap-2'>
                     <div className='w-full flex justify-end gap-5 '>
                         <Edit onClick={() => setEditWidow(true)} className='active:scale-90 hover:text-blue-600 cursor-pointer' />
                         <Trash2Icon onClick={() => setDeleteWidow(true)} className='active:scale-90 hover:text-red-600 cursor-pointer' />
@@ -271,7 +271,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
 
             {deleteWindow &&
                 <div className='w-full h-full inset-0 fixed bg-black/30 backdrop-blur-lg flex items-center justify-center'>
-                    <div className='bg-white p-4 rounded-xl flex flex-col gap-5'>
+                    <div className='bg-white p-4 rounded-xl flex flex-col gap-5 m-2'>
                         <h1 className='text-xl font-black'>Delete</h1>
 
                         <div>
@@ -309,7 +309,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
             {/* edit window */}
             {editWindow &&
                 <div className='w-full h-full  flex fixed  inset-0 bg-black/30 backdrop-blur-xl items-center justify-center'>
-                    <div className='bg-white rounded-xl p-4 flex flex-col gap-5 w-2/5 max-h-[80vh] no-scrollbar overflow-y-scroll'>
+                    <div className='bg-white rounded-xl p-4 flex flex-col gap-5 m-2 sm:w-2/5 max-h-[80vh] no-scrollbar overflow-y-scroll'>
                         <h1>Edit Meta Data for <span className='text-blue-600'>{currentAsset.id}</span></h1>
 
                         <div className='w-full h-[250px]'>
