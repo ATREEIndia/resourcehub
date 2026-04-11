@@ -68,7 +68,7 @@ const MediaTile = ({ data,handleCollectionSelection,addALL, _isBookmarked=false 
     },[addALL])
 
     const opneDetailsPage=()=>{
-        const url=`/details?id=${data.id}`
+        const url=`/details/${data.id}`
         window.open(url, "_blank")
     }
 

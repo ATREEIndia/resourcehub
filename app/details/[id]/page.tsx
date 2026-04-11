@@ -1,18 +1,20 @@
 'use client'
-import React, { useEffect, useState } from 'react'
-import { useMyContext } from '../Context/MyContext'
-import { useSearchParams } from 'next/navigation'
+import React, { use, useEffect, useState } from 'react'
+import { useMyContext } from '../../Context/MyContext'
+
 import Image from 'next/image'
 import { AlignRight, Download, Edit, Package, Trash2Icon, View } from 'lucide-react'
 import { ref, remove, update } from 'firebase/database'
-import { db, m_firestore } from '../Components/MyFirebase'
+import { db, m_firestore } from '../../Components/MyFirebase'
 import { doc, setDoc } from 'firebase/firestore'
-import { Suspense } from 'react'
 
-const page = () => {
+
+const page = ({ params }: { params: Promise<{ id: string }> }) => {
     const { dbData, user, fcData } = useMyContext()
-    const searchParams = useSearchParams()
-    const assetID = searchParams.get('id') || ""
+    const { id } = use(params);
+    const assetID = decodeURIComponent(id);
+    
+   
 
     const [currentAsset, setCurrentAsset] = useState<any | null>(null)
     const [imgSrc, setImgSrc] = useState<string>('/logo.png')
@@ -157,7 +159,7 @@ const page = () => {
     }
 
     return (
-        <Suspense>
+        
             <div className='w-full h-full flex justify-center items-center min-h-screen bg-gray-200'>
             <div className='w-4/5 bg-white p-4 rounded-xl grid grid-cols-2'>
 
@@ -391,7 +393,7 @@ const page = () => {
 
 
         </div>
-        </Suspense>
+        
         
     )
 }

@@ -32,7 +32,7 @@ const BannerWithSearch = () => {
     const navigateToResultPage = () => {
         
         if(querryText.length>2){
-            const url=`/results?q=${querryText}`
+            const url=`/results/${querryText}`
            window.open(url,'_blank',"noopener,noreferrer")
         }
 

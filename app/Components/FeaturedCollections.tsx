@@ -30,7 +30,7 @@ const FeaturedCollections = () => {
     }
 
     const openCollection = (id: string) => {
-        const url = `collection?c=${id}`
+        const url = `collection/${id}`
         window.open(url, '_blank', 'noopener,noreferrer');
 
     }

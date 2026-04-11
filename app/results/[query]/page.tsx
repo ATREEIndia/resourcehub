@@ -1,18 +1,19 @@
 'use client'
-import { useSearchParams } from 'next/navigation'
-import React, { useEffect, useState } from 'react'
-import Navbar from '../Components/Navbar';
-import ResultHero from './ResultHero';
-import { useMyContext } from '../Context/MyContext';
+
+import React, { useEffect, useState, use } from 'react'
+import Navbar from '../../Components/Navbar';
+import ResultHero from '../ResultHero';
+import { useMyContext } from '../../Context/MyContext';
 import lottieSearching from '@/public/searching.json'
 import Lottie from 'lottie-react';
-import { Suspense } from 'react'
 
-const page = () => {
+
+const page = ({ params }: { params: Promise<{ query: string }> }) => {
     const { dbData } = useMyContext()
 
-    const searchParams = useSearchParams();
-    const querry = searchParams.get('q') || ""
+    const { query } = use(params);
+const querry = decodeURIComponent(query);
+    
     const[searchQuerry, setSearchQuerry]=useState(querry)
     const [dbImageData, setDbImageData] = useState<any[]>([])
     const [dbVideoData, setDbVideoData] = useState<any[]>([])
@@ -82,7 +83,7 @@ const page = () => {
 
 
     return (
-        <Suspense>
+       
              <div className='w-full h-full'>
             
 
@@ -127,7 +128,7 @@ const page = () => {
 
 
         </div>
-        </Suspense>
+       
        
     )
 }

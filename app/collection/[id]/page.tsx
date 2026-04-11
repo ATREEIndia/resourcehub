@@ -1,15 +1,15 @@
 'use client'
 import { useSearchParams } from 'next/navigation';
-import React, { useEffect, useState } from 'react'
-import { useMyContext } from '../Context/MyContext';
-import ResultHero from '../results/ResultHero';
+import React, { use, useEffect, useState } from 'react'
+import { useMyContext } from '../../Context/MyContext';
+import ResultHero from '../../results/ResultHero';
 import lottieSearch from '@/public/searching.json'
 import Lottie from 'lottie-react';
-import { Suspense } from 'react'
 
-const page = () => {
-    const searchParams = useSearchParams();
-    const fcId = searchParams.get('c') || ""
+
+const page = ({ params }: { params: Promise<{ id: string }> }) => {
+    const { id } = use(params);
+const fcId = decodeURIComponent(id);
     const { dbData, fcData } = useMyContext()
     const [imgData, setImgData] = useState<any[]>([])
     const [videoData, setVideoData] = useState<any[]>([])
@@ -54,7 +54,7 @@ const page = () => {
 
 
     return (
-        <Suspense>
+        
              <div className='w-full h-full p-4 min-h-screen'>
             <div className='flex flex-col gap-1'>
                 <h1 className='text-2xl'>Collection <span className='text-blue-500 font-medium'>{fcId}</span></h1>
@@ -85,7 +85,7 @@ const page = () => {
 
         </div>
 
-        </Suspense>
+      
        
     )
 }
