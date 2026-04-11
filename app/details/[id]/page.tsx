@@ -162,7 +162,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
     return (
         
             <div className='w-full h-full flex justify-center items-center min-h-screen bg-gray-200'>
-            <div className='SM:w-4/5 bg-white p-4 rounded-xl grid sm:grid-cols-2'>
+            <div className='sm:w-4/5 bg-white p-4 rounded-xl grid sm:grid-cols-2'>
 
                 <div className='w-full h-full max-h-[80vh]'>
                     {currentAsset.fileType === 'image' &&
