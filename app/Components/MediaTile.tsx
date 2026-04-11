@@ -125,6 +125,7 @@ const MediaTile = ({ data,handleCollectionSelection,addALL, _isBookmarked=false 
                            
                             src={data.url}
                             controls
+                            muted
                             className='object-contain'
                         />
                     </div>
