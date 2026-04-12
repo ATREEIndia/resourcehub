@@ -15,6 +15,8 @@ type contextProbs = {
 type fcType = {
     id: string,
     assets: string,
+    created:string,
+    contributers:string
 }
 
 const myContext = createContext<contextProbs | undefined>(undefined)
@@ -91,11 +93,25 @@ export const MyContextProvider = ({ children }: { children: ReactNode }) => {
                 const data = doc.data();
 
                 const access = data.access || '';
+                const created=data.createdBy || ''
+
                 const accessArray=access.split(',')
                 console.log('Access: ' + accessArray)
 
-                if (access.length>2 && !accessArray.some((a:string)=>a===loggedInUser?.email)) {
-                    return null; // Mark for filtering
+                // if (access.length>2 && (!accessArray.some((a:string)=>a===loggedInUser?.email) || created!==loggedInUser?.email )) {
+                //     return null; // Mark for filtering
+                // }
+
+                if(access.length>2){
+                    const isCreated=(created===loggedInUser?.email)
+                    const is_contributer=(accessArray.some((id:string)=>id===loggedInUser?.email))
+
+                    // console.log(doc.id+ ": created"+isCreated )
+                    // console.log(doc.id+ ": contributer"+is_contributer )
+
+                    if(!isCreated && !is_contributer){
+                        return null
+                    }
                 }
 
 
@@ -104,7 +120,9 @@ export const MyContextProvider = ({ children }: { children: ReactNode }) => {
                 // Safety check: Use doc.id if data.id is missing
                 return {
                     id: data?.id || doc.id,
-                    assets: data?.assets || ""
+                    assets: data?.assets || "",
+                    contributers:data.access ||"",
+                    created:data.createdBy || ''
                 };
             }).filter((item) => item !== null);
 
