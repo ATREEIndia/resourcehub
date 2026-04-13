@@ -402,6 +402,13 @@ const UploadForm = ({ manageUploadForm }: probs) => {
     }
 
     const finalUploadToFirebase = () => {
+        if(selectedFiles.some((file)=>file.uploadProgress && file.uploadProgress<100 || file.fileType=='video' && file.compressStatus!=='Compressed Successfully')){
+            alert('Please wait for all the file to be processed.')
+            return
+
+        } 
+
+        
         selectedFiles.map((file, i) => {
             uploadToFirebase(file)
         })
