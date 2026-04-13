@@ -85,7 +85,7 @@ const MediaTile = ({ data,handleCollectionSelection,addALL, _isBookmarked=false 
 
                         <div onClick={opneDetailsPage} className='w-full h-full relative z-12 flex items-center justify-center p-4   '>
                             <Image
-                                className='object-contain select-none '
+                                className='object-contain select-none cursor-pointer'
                                 unoptimized
                                 src={data.url ? data.url : "/image_notfound.png"}
                                 fill
