@@ -119,14 +119,14 @@ const MediaTile = ({ data,handleCollectionSelection,addALL, _isBookmarked=false 
             {mediaType === "video" &&
 
 
-                <div  className='w-full h-full border p-4 relative rounded-xl'>
+                <div  className='w-full h-full  border py-4 relative rounded-xl'>
                     <div onClick={opneDetailsPage} className='p-4'>
                         <video
                            
                             src={data.url}
                             controls
                             muted
-                            className='object-contain'
+                            className='object-cover w-full h-full cursor-pointer max-h-[200px]'
                         />
                     </div>
 
