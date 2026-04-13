@@ -12,6 +12,13 @@ type params = {
 const ResultHero = ({ dbImageData,dbVideoData }: params) => {
     const [currentMediaType, setCurrentMediaType] = useState('Images')
     const mediaTypes = ["Images", "Videos"]
+    
+    useEffect(()=>{
+        if(dbImageData.length<1 && dbVideoData.length>0){
+            setCurrentMediaType('Videos')
+        }
+
+    },[dbImageData,dbVideoData])
    
 
     

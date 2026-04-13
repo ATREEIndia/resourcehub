@@ -34,12 +34,13 @@ export const MyContextProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
-                // if (!user.email?.includes('@atree.org')) {
-                //     setLoggedInUser(null)
-                //     alert('Please use ATREE Email ID')
-                //     return
+                if ((!user.email?.includes('@atree.org')) && (!user.email?.includes( 'ananyapathak.emailme@gmail.com'))) {
+                    setLoggedInUser(null)
+                    alert('Please use ATREE Email ID')
+                    return
 
-                // }
+                }
+                
                 setLoggedInUser(user)
                 addUserToFirestore(user)
             } else {
