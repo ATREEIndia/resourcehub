@@ -1,6 +1,6 @@
 'use client'
 import Image from 'next/image'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import UploadForm from './UploadForm'
 import SignIn from './SignIn'
 import { useMyContext } from '../Context/MyContext'
@@ -11,15 +11,32 @@ import { Hamburger, Heart, LogOut, Menu, Upload } from 'lucide-react'
 
 const Navbar = () => {
 
-    const { user } = useMyContext()
+    const { user, regUserData } = useMyContext()
 
     const [openUploadForm, setOpenUploadForm] = useState(false)
     const [mobileMenu, setMobileMenu] = useState(false)
+    const[isUserRegistred, setIsUserRegistered]=useState(false)
 
     const manageUploadForm = () => {
         setOpenUploadForm(!openUploadForm)
         setMobileMenu(false)
     }
+
+    useEffect(()=>{
+        if(!user || !regUserData) return;
+
+       
+        console.log(user?.email)
+
+        if(regUserData.length<1){
+             setIsUserRegistered(true)
+             return;
+        }
+
+       const isMatch = regUserData.some(item => item.id === user?.email);
+       setIsUserRegistered(isMatch)
+
+    },[user, regUserData])
 
 
 
@@ -64,8 +81,10 @@ const Navbar = () => {
 
 
 
-
+               {isUserRegistred &&
                 <div onClick={() => setOpenUploadForm(true)} className='p-2 bg-blue-500 cursor-pointer text-white rounded-xl text-sm active:scale-75'>Upload</div>
+
+               }
 
             </div>
 

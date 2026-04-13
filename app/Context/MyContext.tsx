@@ -11,12 +11,18 @@ type contextProbs = {
     dbData: any[]
     userFirestoreData: DocumentData | null
     fcData: any[]
+    regUserData: any[]
 }
 type fcType = {
     id: string,
     assets: string,
     created:string,
     contributers:string
+}
+type regUserType={
+    id:string;
+    role:string;
+    regBy:string
 }
 
 const myContext = createContext<contextProbs | undefined>(undefined)
@@ -26,6 +32,7 @@ export const MyContextProvider = ({ children }: { children: ReactNode }) => {
     const [isLoading, setIsLoading] = useState(true)
     const [dbSnapshotData, setDbSnapshotData] = useState<any[]>([])
     const [fcData, setFcData] = useState<fcType[]>([])
+    const [regUserData, setRegUserData] = useState<regUserType[]>([])
     const [userFirestoreData, setUserFirestoreData] = useState<DocumentData | null>(null)
 
 
@@ -40,7 +47,7 @@ export const MyContextProvider = ({ children }: { children: ReactNode }) => {
                     return
 
                 }
-                
+
                 setLoggedInUser(user)
                 addUserToFirestore(user)
             } else {
@@ -137,6 +144,34 @@ export const MyContextProvider = ({ children }: { children: ReactNode }) => {
 
 
 
+    // reg-users
+    useEffect(()=>{
+        const regUserRef=query(collectionGroup(m_firestore,'reg_users'))
+
+        const unsubscribe=onSnapshot(regUserRef,(snapshot)=>{
+            if(!snapshot.docs) return
+
+            const docs=snapshot.docs;
+           const snapshotData= docs.map((doc,i)=>{
+                const data=doc.data();
+                console.log(data.id)
+                return{
+                    id:data.id || "",
+                    role: data.role || '',
+                    regBy:data.regBy || ''
+                }
+            }) 
+
+            setRegUserData(snapshotData as regUserType[])
+
+        })
+
+        return ()=>unsubscribe()
+
+    },[loggedInUser])
+
+
+
     //user firestore data
 
     useEffect(() => {
@@ -163,7 +198,8 @@ export const MyContextProvider = ({ children }: { children: ReactNode }) => {
         loading: isLoading,
         userFirestoreData: userFirestoreData,
         dbData: dbSnapshotData,
-        fcData: fcData
+        fcData: fcData,
+        regUserData:regUserData
     }
 
     return (
