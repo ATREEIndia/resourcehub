@@ -42,6 +42,8 @@ const page = ({ params }: { params: Promise<{ query: string }> }) => {
 
     const tryForLocationName=async (latlong:string,fileType:string, id:string)=>{
         const locationName= await getLocationName(latlong[0], latlong[1])
+        if(locationName.includes("Error")) return;
+
          const folder = fileType === 'image' ? 'Images' : 'Videos';
           const dbRef = ref(db, `${folder}/${id}`);
            try {
@@ -76,7 +78,7 @@ const page = ({ params }: { params: Promise<{ query: string }> }) => {
             // 'address' object contains specific parts like city, state, or park name
             return data.display_name || "Location Unknown";
         } catch (error) {
-            console.error("Error fetching location:", error);
+            //console.error("Error fetching location:", error);
             return "Error finding location";
         }
     };

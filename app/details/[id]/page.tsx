@@ -28,7 +28,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
     const [location, setLocation] = useState('')
     const [collectionList, setCollectionList] = useState<string[]>([])
     const[refreshLocation, setRefreshLocation]=useState(false)
-    const [locationName, setLocationName]=useState(currentAsset?.exifLocationName || "Unable to find location addresss")
+    const [locationName, setLocationName]=useState(currentAsset?.exifLocationName)
 
     useEffect(() => {
         // Find the specific asset
@@ -53,6 +53,8 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
     useEffect( ()=>{
 
         if(!currentAsset || !currentAsset.exifLocation) return
+        setLocationName(currentAsset.exifLocationName)
+
         const latlong=currentAsset.exifLocation.split(',')
         
             upadteLocationName(latlong)
@@ -66,6 +68,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
 
     const upadteLocationName=async(latlong:string)=>{
          const locationName= await getLocationName(latlong[0], latlong[1])
+         if(locationName.includes('Error')) return
          setLocationName(locationName)
 
 
@@ -82,7 +85,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
             // 'address' object contains specific parts like city, state, or park name
             return data.display_name || "Location Unknown";
         } catch (error) {
-            console.error("Error fetching location:", error);
+            //console.error("Error fetching location:", error);
             return "Error finding location";
         }
     };
