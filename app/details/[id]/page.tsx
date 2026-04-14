@@ -13,8 +13,8 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
     const { dbData, user, fcData } = useMyContext()
     const { id } = use(params);
     const assetID = decodeURIComponent(id);
-    
-   
+
+
 
     const [currentAsset, setCurrentAsset] = useState<any | null>(null)
     const [imgSrc, setImgSrc] = useState<string>('/logo.png')
@@ -34,14 +34,14 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
 
         if (asset) {
             setCurrentAsset(asset)
-           
+
             setManualTagArray(asset.m_tags.trim().split(',') || [])
             setAiTagArray(asset.tags.trim().split(',') || [])
             setCredit(asset.credits || '')
             setLocation(asset.location || '')
 
-             if(asset.m_tags.trim()===''){
-                 setManualTagArray([])
+            if (asset.m_tags.trim() === '') {
+                setManualTagArray([])
             }
 
 
@@ -49,17 +49,17 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
     }, [dbData, assetID])
 
     useEffect(() => {
-        if(!fcData || !currentAsset) return
+        if (!fcData || !currentAsset) return
         setCollectionList([])
         fcData.map((fc) => {
             if (fc.assets.includes(currentAsset.id)) {
-                setCollectionList((prev)=>[...prev,fc.id])
+                setCollectionList((prev) => [...prev, fc.id])
             }
 
         })
 
 
-    }, [fcData,currentAsset])
+    }, [fcData, currentAsset])
 
     // If no asset is found yet, you could return a loader or the logo
     if (!currentAsset) {
@@ -117,7 +117,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
 
     const addManualtag = () => {
 
-        if (manualTagArray.some((tag) => tag === manualTagInput) || manualTagInput.length<2 ) return
+        if (manualTagArray.some((tag) => tag === manualTagInput) || manualTagInput.length < 2) return
 
         setManualTagArray((prev) => [...prev, manualTagInput])
         setManualTagInput('')
@@ -144,7 +144,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
                     credits: credit,
                     updatedBy: user?.email,
                     updatedAt: new Date(),
-                    location:location
+                    location: location
 
 
                 })
@@ -160,11 +160,47 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
             alert('Admin key not matching')
         }
 
+
+
     }
 
+
+    const handleDownload = async () => {
+        try {
+            const response = await fetch(currentAsset.s3Url, {
+                method: 'GET',
+                mode: 'cors', // Explicitly ask for CORS
+                headers: {
+                    'Origin': window.location.origin // Some S3 configurations require this
+                }
+            });
+
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+
+            link.href = url;
+            // Fallback for filename if currentAsset.fileName is missing
+            link.download = currentAsset.fileName || 'downloaded-image.jpg';
+
+            document.body.appendChild(link);
+            link.click();
+
+            // Cleanup
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+           // console.error("Download failed:", error);
+            // Fallback: open in new tab if fetch fails
+            window.open(currentAsset.s3Url, '_blank');
+        }
+    };
+
     return (
-        
-            <div className='w-full h-full flex justify-center items-center min-h-screen bg-gray-200'>
+
+        <div className='w-full h-full flex justify-center items-center min-h-screen bg-gray-200'>
             <div className='sm:w-4/5 bg-white p-4 rounded-xl grid sm:grid-cols-2'>
 
                 <div className='w-full h-full max-h-[80vh]'>
@@ -213,24 +249,24 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
 
                     <div className='flex gap-2'>
                         <h1>Exif-Location:</h1>
-                        <p className='text-blue-500'>{currentAsset.exifLocation} <ArrowDownNarrowWide/> {currentAsset.exifLocationName}</p>
+                        <p className='text-blue-500'>{currentAsset.exifLocation} <ArrowDownNarrowWide /> {currentAsset.exifLocationName}</p>
                     </div>
 
-                    {collectionList.length>0 &&
-                    <div className='mt-5 select-none'>
-                        <h1 className='font-medium'>Collections</h1>
-                        <div className=' flex gap-2'>
-                            {collectionList.map((c,i) => (
-                                <div key={i} className='flex gap-1 p-1 bg-orange-100 items-center text-xs rounded-lg'>
-                                    <Package/>
-                                    <p>{c}</p>
-                                </div>
-                            ))}
+                    {collectionList.length > 0 &&
+                        <div className='mt-5 select-none'>
+                            <h1 className='font-medium'>Collections</h1>
+                            <div className=' flex gap-2'>
+                                {collectionList.map((c, i) => (
+                                    <div key={i} className='flex gap-1 p-1 bg-orange-100 items-center text-xs rounded-lg'>
+                                        <Package />
+                                        <p>{c}</p>
+                                    </div>
+                                ))}
 
 
+                            </div>
                         </div>
-                    </div>
-                    
+
                     }
 
 
@@ -274,7 +310,10 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
 
                         <div className='mt-5 select-none active:scale-95 cursor-pointer flex items-center gap-2 p-2 hover:bg-blue-600 text-white rounded-xl bg-blue-400'>
                             <View size={15} />
-                            <a href={currentAsset.s3Url} target='_blank' download={'image.jpg'}>Open Original File</a>
+                            <div onClick={async () => await handleDownload()}>
+                                Download Original File
+                            </div>
+                            {/* <a href={currentAsset.s3Url} target='_blank' download={'sdsd.jpg'}>Open Original File</a> */}
                         </div>
 
 
@@ -421,8 +460,8 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
 
 
         </div>
-        
-        
+
+
     )
 }
 
