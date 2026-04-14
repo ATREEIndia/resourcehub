@@ -6,6 +6,9 @@ import ResultHero from '../ResultHero';
 import { useMyContext } from '../../Context/MyContext';
 import lottieSearching from '@/public/searching.json'
 import Lottie from 'lottie-react';
+import { doc } from 'firebase/firestore';
+import { db } from '@/app/Components/MyFirebase';
+import { ref, update } from 'firebase/database';
 
 
 const page = ({ params }: { params: Promise<{ query: string }> }) => {
@@ -18,62 +21,67 @@ const page = ({ params }: { params: Promise<{ query: string }> }) => {
     const [dbImageData, setDbImageData] = useState<any[]>([])
     const [dbVideoData, setDbVideoData] = useState<any[]>([])
     const [newQuerry, setNewQuerry] = useState(querry)
-    const [filtering, setFiltering] = useState(true)
-
-    // useEffect(() => {
-
-    //     setDbImageData([]);
-    //     setDbVideoData([]);
-    //     setFiltering(true)
+    const [filtering, setFiltering] = useState(true);
 
 
-    //     let querryArray = searchQuerry.trim().toLowerCase().split(" ")
-    //     querryArray = querryArray.filter((data) => data.length > 2)
+    useEffect(()=>{
+        if(!dbData) return
+       dbData.map((data)=>{
 
-    //     dbData.map((data, i) => {
-    //         if (!data.tags) return
-    //         const aiTagArray = data.tags.replace(",", " ").toLowerCase().split(" ")
-    //         console.log(aiTagArray)
-    //         console.log(data.id + "" + querryArray)
+        if(data.exifLocationName==='Error finding location'){
+            const latlong=data.exifLocation.split(',')
+            tryForLocationName(latlong, data.fileType, data.id)
 
-
-    //         const hasmatch_ai = querryArray.some((searchWord: string) =>
-    //             aiTagArray.some((tag: string) =>
-    //                 tag.toLowerCase().includes(searchWord.toLowerCase().trim())
-    //             )
-    //         );
-    //         let hasmatch_manual = false
-    //         if (data.m_tags) {
-    //             const manualTagArray = data.m_tags.replace(",", "").toLowerCase().split(" ")
-    //             hasmatch_manual = querryArray.some((searchWord: string) =>
-    //             manualTagArray.some((tag: string) =>
-    //                 tag.toLowerCase().includes(searchWord.toLowerCase().trim())
-    //             )
-    //         );
-
-    //         }
+        }
 
 
-
-    //         if (!hasmatch_ai && !hasmatch_manual) return
-
-    //         console.log(data.id)
-
-    //         if (data.fileType === 'image') {
-    //             setDbImageData((prev) => [...prev, data])
-    //         }
-
-    //         if (data.fileType === 'video') {
-    //             setDbVideoData((prev) => [...prev, data])
-    //         }
+       })
 
 
-    //     })
+    },[dbData])
 
-    //   setTimeout(() => setFiltering(false), 3000);
+    const tryForLocationName=async (latlong:string,fileType:string, id:string)=>{
+        const locationName= await getLocationName(latlong[0], latlong[1])
+         const folder = fileType === 'image' ? 'Images' : 'Videos';
+          const dbRef = ref(db, `${folder}/${id}`);
+           try {
+                await update(dbRef, {
+                    
+                    exifLocationName: locationName || ""
+    
+                })
+    
+            } catch (error) {
+    
+            }
+
+       
+        
+
+    }
+   
+
+    
 
 
-    // }, [dbData, searchQuerry]);
+
+     const getLocationName = async (lat: string, lon: string) => {
+        try {
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
+            );
+            const data = await response.json();
+
+            // 'display_name' gives the full address
+            // 'address' object contains specific parts like city, state, or park name
+            return data.display_name || "Location Unknown";
+        } catch (error) {
+            console.error("Error fetching location:", error);
+            return "Error finding location";
+        }
+    };
+
+
 
 
     useEffect(() => {

@@ -27,6 +27,8 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
     const [credit, setCredit] = useState('')
     const [location, setLocation] = useState('')
     const [collectionList, setCollectionList] = useState<string[]>([])
+    const[refreshLocation, setRefreshLocation]=useState(false)
+    const [locationName, setLocationName]=useState(currentAsset?.exifLocationName || "Unable to find location addresss")
 
     useEffect(() => {
         // Find the specific asset
@@ -47,6 +49,43 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
 
         }
     }, [dbData, assetID])
+
+    useEffect( ()=>{
+
+        if(!currentAsset || !currentAsset.exifLocation) return
+        const latlong=currentAsset.exifLocation.split(',')
+        
+            upadteLocationName(latlong)
+            console.log('fetching location name')
+            
+          
+        
+
+
+    },[currentAsset, refreshLocation])
+
+    const upadteLocationName=async(latlong:string)=>{
+         const locationName= await getLocationName(latlong[0], latlong[1])
+         setLocationName(locationName)
+
+
+    }
+
+    const getLocationName = async (lat: string, lon: string) => {
+        try {
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
+            );
+            const data = await response.json();
+
+            // 'display_name' gives the full address
+            // 'address' object contains specific parts like city, state, or park name
+            return data.display_name || "Location Unknown";
+        } catch (error) {
+            console.error("Error fetching location:", error);
+            return "Error finding location";
+        }
+    };
 
     useEffect(() => {
         if (!fcData || !currentAsset) return
@@ -247,9 +286,9 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
                         <p className='text-blue-500'>{currentAsset.exifTimestamp}</p>
                     </div>
 
-                    <div className='flex gap-2'>
+                    <div onClick={()=>setRefreshLocation(!refreshLocation)} className='flex gap-2'>
                         <h1>Exif-Location:</h1>
-                        <p className='text-blue-500'>{currentAsset.exifLocation} <ArrowDownNarrowWide /> {currentAsset.exifLocationName}</p>
+                        <p className='text-blue-500'>{currentAsset.exifLocation} <ArrowDownNarrowWide /> {locationName}</p>
                     </div>
 
                     {collectionList.length > 0 &&
