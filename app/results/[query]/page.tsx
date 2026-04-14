@@ -115,7 +115,7 @@ const page = ({ params }: { params: Promise<{ query: string }> }) => {
                 });
             };
 
-            const isMatch = checkMatch(item.tags) || checkMatch(item.m_tags) || checkMatch(item.exifLocationName) || checkMatch(item.exifTimestamp);
+            const isMatch = checkMatch(item.tags) || checkMatch(item.m_tags) || checkMatch(item.exifLocationName) || checkMatch(item.exifTimestamp) || checkMatch(item.location) ;
 
             if (isMatch) {
                 if (item.fileType === 'image') matchedImages.push(item);
