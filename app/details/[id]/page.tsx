@@ -3,7 +3,7 @@ import React, { use, useEffect, useState } from 'react'
 import { useMyContext } from '../../Context/MyContext'
 
 import Image from 'next/image'
-import { AlignRight, Download, Edit, Package, Trash2Icon, View } from 'lucide-react'
+import { AlignRight, ArrowDownNarrowWide, ArrowUpNarrowWide, ArrowUpNarrowWideIcon, Download, Edit, LocateIcon, Package, Trash2Icon, View } from 'lucide-react'
 import { ref, remove, update } from 'firebase/database'
 import { db, m_firestore } from '../../Components/MyFirebase'
 import { doc, setDoc } from 'firebase/firestore'
@@ -25,6 +25,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
     const [manualTagArray, setManualTagArray] = useState<string[]>([])
     const [aiTagArray, setAiTagArray] = useState<string[]>([])
     const [credit, setCredit] = useState('')
+    const [location, setLocation] = useState('')
     const [collectionList, setCollectionList] = useState<string[]>([])
 
     useEffect(() => {
@@ -37,6 +38,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
             setManualTagArray(asset.m_tags.trim().split(',') || [])
             setAiTagArray(asset.tags.trim().split(',') || [])
             setCredit(asset.credits || '')
+            setLocation(asset.location || '')
 
              if(asset.m_tags.trim()===''){
                  setManualTagArray([])
@@ -141,7 +143,8 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
                     m_tags: manualTagArray.join(','),
                     credits: credit,
                     updatedBy: user?.email,
-                    updatedAt: new Date()
+                    updatedAt: new Date(),
+                    location:location
 
 
                 })
@@ -194,13 +197,23 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
 
                     <div className=' flex gap-2'>
                         <h1>Media Credits:</h1>
-                        <p className='text-blue-600'>{currentAsset.credits}</p>
+                        <p className='text-blue-600'>{currentAsset.credits || 'Not filled by contributor'}</p>
 
                     </div>
 
                     <div className='flex gap-2'>
                         <h1>Original File Name:</h1>
                         <p className='text-blue-500'>{currentAsset.fileName}</p>
+                    </div>
+
+                    <div className='flex gap-2'>
+                        <h1>TimeStamp:</h1>
+                        <p className='text-blue-500'>{currentAsset.exifTimestamp}</p>
+                    </div>
+
+                    <div className='flex gap-2'>
+                        <h1>Exif-Location:</h1>
+                        <p className='text-blue-500'>{currentAsset.exifLocation} <ArrowDownNarrowWide/> {currentAsset.exifLocationName}</p>
                     </div>
 
                     {collectionList.length>0 &&
@@ -241,6 +254,15 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
 
                                 <div key={i} className='text-xs p-2  bg-blue-100'>{tag}</div>
                             ))}
+
+                        </div>
+
+                    </div>
+
+                    <div className='mt-5 flex gap-1'>
+                        <p>Location:</p>
+                        <div className='flex gap-2 flex-wrap'>
+                            {currentAsset.location || 'Not filled by contributor'}
 
                         </div>
 
@@ -366,6 +388,11 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
                                 <div className='w-full h-full  p-2'>
                                     <h1>Media Credits</h1>
                                     <input onChange={(e) => setCredit(e.target.value)} className='p-2 bg-gray-100 outline-none rounded-xl w-full' value={credit} type='text' />
+                                </div>
+
+                                <div className='w-full h-full  p-2'>
+                                    <h1>Location</h1>
+                                    <input onChange={(e) => setLocation(e.target.value)} className='p-2 bg-gray-100 outline-none rounded-xl w-full' value={location} type='text' />
                                 </div>
 
                                 {currentAsset.uploadedBy !== user?.email &&

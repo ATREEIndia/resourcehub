@@ -7,7 +7,7 @@ import { useMyContext } from '../Context/MyContext'
 import { signOut } from 'firebase/auth'
 import { auth } from './MyFirebase'
 import Link from 'next/link'
-import { Hamburger, Heart, LogOut, Menu, Upload } from 'lucide-react'
+import { Hamburger, Heart, LogOut, Menu, Upload, UploadCloud } from 'lucide-react'
 
 const Navbar = () => {
 
@@ -63,6 +63,11 @@ const Navbar = () => {
                     <Heart />
                 </a>
 
+                <a href='/myuploads' target='_blank' className='cursor-pointer px-4 flex items-center flex-col '>
+                    <Upload className='active:scale-95' />
+                    <p className='text-[8px] opacity-60 hover:opacity-100'>My Uploads</p>
+                </a>
+
 
                 <div className='flex px-5 gap-1 '>
                     <div className='w-10 h-10 flex items-center justify-center '>
@@ -115,6 +120,11 @@ const Navbar = () => {
                         <a href='/liked' target='_blank'className='flex gap-1 border-b py-2 border-gray-300'>
                             <Heart size={15} />
                             <p>Liked</p>
+
+                        </a>
+                        <a href='/myuploads' target='_blank'className='flex gap-1 border-b py-2 border-gray-300'>
+                            <UploadCloud size={15} />
+                            <p>My Uploads</p>
 
                         </a>
                         <div onClick={() => {signOut(auth); setMobileMenu(false)}} className='flex gap-1 text-red-800 py-2 border-gray-300'>

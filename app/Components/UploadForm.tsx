@@ -1,12 +1,12 @@
 'use client'
 import { Circle, Loader, RotateCcw, Trash2, X } from 'lucide-react'
 import React, { useEffect, useRef, useState } from 'react'
-import { fileProb } from '../Constants/MyConstnats'
+import { commonDataList, fileProb } from '../Constants/MyConstnats'
 import { useMyContext } from '../Context/MyContext'
 import Image from 'next/image'
 import { ref, update } from 'firebase/database'
 import { db } from './MyFirebase'
-
+import ExifReader from 'exifreader';
 
 type probs = {
     manageUploadForm: () => void
@@ -26,17 +26,32 @@ const UploadForm = ({ manageUploadForm }: probs) => {
     const [manualTags, setManualTags] = useState<string[]>([])
     const [aiTags, setAiTags] = useState<string[]>([])
     const [credits, setCredits] = useState('')
+    const [peningUploads, setPendingUploads] = useState(0)
+    const [currentLocation, setCurrentLocation] = useState('')
+  
+
+    useEffect(() => {
+        if (!selectedFiles) return
+        const pending = selectedFiles.filter((file) => file.uploadProgress && file.uploadProgress < 100).length
+        setPendingUploads(pending)
+
+
+    }, [selectedFiles])
 
     useEffect(() => {
         if (activeFile) {
             setManualTags(activeFile.m_Tags || [])
             setAiTags(activeFile.ai_Tags || [])
             setCredits(activeFile.credits || '')
+            setCurrentLocation(activeFile.location || '')
+           
 
 
 
         }
     }, [activeFileIndex, dbData])
+
+   
 
     useEffect(() => {
         setSelectedFiles((prev) =>
@@ -74,7 +89,8 @@ const UploadForm = ({ manageUploadForm }: probs) => {
                         ...file,
                         m_Tags: manualTags,
                         aiTags: aiTags,
-                        credits: credits
+                        credits: credits,
+                        location: currentLocation
                     }
                 } else {
                     return file;
@@ -83,7 +99,7 @@ const UploadForm = ({ manageUploadForm }: probs) => {
         ));
 
 
-    }, [manualTags, aiTags, credits])
+    }, [manualTags, aiTags, credits, currentLocation])
 
 
 
@@ -97,6 +113,75 @@ const UploadForm = ({ manageUploadForm }: probs) => {
         return 'unknown'
     }
 
+    const extractExif = async (file: File) => {
+
+
+        try {
+            // 1. Read the file as an ArrayBuffer
+            const data = await file.arrayBuffer();
+
+            // 2. Load the EXIF tags
+            const tags = ExifReader.load(data);
+
+            // 3. Extract Date/Time
+            // 'DateTimeOriginal' is usually when the photo was actually taken
+            const timestamp = tags['DateTimeOriginal']?.description;
+
+            // 4. Extract Location (GPS)
+            const latitude = tags['GPSLatitude']?.description;
+            const longitude = tags['GPSLongitude']?.description;
+
+            console.log(`File: ${file.name}`);
+            console.log(`Taken on: ${timestamp || 'No date found'}`);
+            console.log(`Location: https://www.google.com/maps?q=${latitude}, ${longitude}`);
+             let location=''
+           let namedLocation="No location found";
+          
+            if(latitude && longitude){
+                  namedLocation= await getLocationName(latitude,longitude )
+                  location=`${latitude}, ${longitude}`
+
+            }
+
+           
+
+            return {
+                timestamp: timestamp || 'No data found',
+                exifLocation: location,
+                exitLocationName:namedLocation
+
+            }
+
+            // Now you can store these in your state alongside the file
+        } catch (error) {
+            return {
+                timestamp:  'No data found',
+                exifLocation: '',
+                exitLocationName:'No location found'
+
+            }
+            console.error('Error reading EXIF:', error);
+        }
+
+    };
+
+    // Function to get location name
+    const getLocationName = async (lat: string, lon: string) => {
+        try {
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
+            );
+            const data = await response.json();
+
+            // 'display_name' gives the full address
+            // 'address' object contains specific parts like city, state, or park name
+            return data.display_name || "Location Unknown";
+        } catch (error) {
+            console.error("Error fetching location:", error);
+            return "Error finding location";
+        }
+    };
+
 
     const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault()
@@ -107,12 +192,15 @@ const UploadForm = ({ manageUploadForm }: probs) => {
     }
 
 
+
     const addToSelectedFiles = (files: FileList | null) => {
         if (!files) return;
 
         const fileArray = Array.from(files);
-        fileArray.map((file, i) => {
+        fileArray.map(async (file, i) => {
             if (selectedFiles.some((f) => f.file.name === file.name && f.file.size === file.size)) return
+
+            const exif = await extractExif(file)
 
             const newFile: fileProb = {
                 id: `${Date.now()}${i}`,
@@ -126,6 +214,10 @@ const UploadForm = ({ manageUploadForm }: probs) => {
                 ai_Tags: [],
                 credits: '',
                 collections: '',
+                location: '',
+                exifLocation: exif?.exifLocation,
+                exifLocationName:exif?.exitLocationName,
+                exifTimestamp: exif?.timestamp
 
             }
             setSelectedFiles((prev) => [...prev, newFile])
@@ -335,7 +427,11 @@ const UploadForm = ({ manageUploadForm }: probs) => {
                 m_tags: fileToUpload.m_Tags.join(",") || '',
                 tags: fileToUpload.ai_Tags.join(",") || "Thinking",
                 uploadedBy: fileToUpload.uploadedBy,
-                fileName: fileToUpload.file.name
+                fileName: fileToUpload.file.name,
+                location: fileToUpload.location,
+                exifLocation: fileToUpload.exifLocation || "",
+                exifTimestamp: fileToUpload.exifTimestamp || "",
+                exifLocationName: fileToUpload.exifLocationName || ""
 
             })
 
@@ -360,22 +456,22 @@ const UploadForm = ({ manageUploadForm }: probs) => {
     }
 
     const removeAiTag = (index: number) => {
-       
-            setSelectedFiles((prev) =>
-                prev.map((file, i) => {
-                    if (i === activeFileIndex) {
-                        return {
-                            ...file,
-                            // Filter the tags directly on the file object
-                            ai_Tags: file.ai_Tags.filter((_, tagIndex) => tagIndex !== index),
-                        };
-                    }
-                    return file;
-                })
-            );
-        };
 
-    
+        setSelectedFiles((prev) =>
+            prev.map((file, i) => {
+                if (i === activeFileIndex) {
+                    return {
+                        ...file,
+                        // Filter the tags directly on the file object
+                        ai_Tags: file.ai_Tags.filter((_, tagIndex) => tagIndex !== index),
+                    };
+                }
+                return file;
+            })
+        );
+    };
+
+
 
     const applyToAll = (dataType: string) => {
         if (dataType === 'mTags') {
@@ -399,16 +495,26 @@ const UploadForm = ({ manageUploadForm }: probs) => {
             )))
         }
 
+        if (dataType === 'location') {
+            setSelectedFiles((prev) => prev.map((file, i) => (
+                {
+                    ...file,
+                    location: currentLocation
+
+                }
+            )))
+        }
+
     }
 
     const finalUploadToFirebase = () => {
-        if(selectedFiles.some((file)=>file.uploadProgress && file.uploadProgress<100 || file.fileType=='video' && file.compressStatus!=='Compressed Successfully')){
+        if (selectedFiles.some((file) => file.uploadProgress && file.uploadProgress < 100 || file.fileType == 'video' && file.compressStatus !== 'Compressed Successfully' || peningUploads > 0)) {
             alert('Please wait for all the file to be processed.')
             return
 
-        } 
+        }
 
-        
+
         selectedFiles.map((file, i) => {
             uploadToFirebase(file)
         })
@@ -569,8 +675,23 @@ const UploadForm = ({ manageUploadForm }: probs) => {
                                 </div>
 
                                 <div className='w-full p-2 flex-1 h-full max-h-2/3 overflow-y-scroll no-scrollbar '>
+                                     
+                                     {/* exif data */}
+                                     <div className='p-2 bg-blue-50 text-xs rounded-xl mb-4 flex flex-col gap-1'>
+                                        <h1 className='text-sm font-semibold'>Data from Image</h1>
+                                        <p >Timestamp: <span className='text-blue-600'>{activeFile?.exifTimestamp}</span></p>
+                                        <p>Location: <span className='text-blue-600'>{activeFile?.exifLocationName}</span></p>
+                                     </div>
+
+
+
 
                                     <h1 className='text-sm font-semibold select-none'>Add Meta Data</h1>
+
+                                    
+
+
+
 
                                     {/*Manual Tgas  */}
                                     <div className='flex  items-center select-none'>
@@ -578,9 +699,17 @@ const UploadForm = ({ manageUploadForm }: probs) => {
                                         <p onClick={() => applyToAll('mTags')} className='text-xs cursor-pointer mt-2 active:scale-90  font-semibold text-blue-500 '>Apply to All</p>
                                     </div>
                                     <div className='w-full flex gap-1 border border-blue-200 rounded-xl '>
-                                        <input onKeyDown={(e) => e.key === 'Enter' || e.key === "," ? addManualTags() : null}
+                                        <input list='search-suggestions' onKeyDown={(e) => e.key === 'Enter' || e.key === "," ? addManualTags() : null}
                                             value={currentManaulTag}
                                             onChange={(e) => setCurrentManualTag(e.target.value.replace(',', ""))} className=' outline-none p-2 text-xs flex-1' type="text" />
+
+                                        <datalist id="search-suggestions">
+                                            {commonDataList.map((data, i) => (
+                                                <option key={i} value={data} />
+                                            ))}
+
+                                        </datalist>
+
                                         <div onClick={addManualTags} className='p-2 select-none cursor-pointer active:scale-95 bg-blue-700 text-white text-xs rounded-r-xl'>+</div>
 
                                     </div>
@@ -608,15 +737,22 @@ const UploadForm = ({ manageUploadForm }: probs) => {
 
                                     </div>
 
-                                    {/* Credits */}
+                                    {/* location */}
                                     <div className='flex  items-center select-none'>
+                                        <p className='text-xs mt-2 px-2'>Location</p>
+                                        <p onClick={() => applyToAll('location')} className='text-xs cursor-pointer mt-2 active:scale-90  font-semibold text-blue-500 '>Apply to All</p>
+                                    </div>
+                                    <input value={activeFile.location} onChange={(e) => setCurrentLocation(e.target.value)} className='p-2 text-xs outline-none border w-full rounded-xl border-blue-200' type="text" />
+
+                                    {/* Credits */}
+                                    <div className='flex  items-center select-none mt-5'>
                                         <p className='text-xs mt-2 px-2'>Credits</p>
                                         <p onClick={() => applyToAll('credits')} className='text-xs cursor-pointer mt-2 active:scale-90  font-semibold text-blue-500 '>Apply to All</p>
                                     </div>
                                     <input value={activeFile.credits} onChange={(e) => setCredits(e.target.value)} className='p-2 text-xs outline-none border w-full rounded-xl border-blue-200' type="text" />
 
                                     <div onClick={finalUploadToFirebase} className='w-full p-2 flex justify-end select-none'>
-                                        <div className='p-2 bg-blue-600 text-white text-sm active:scale-90 rounded-xl'>Save All</div>
+                                        <div className={`p-2 ${peningUploads === 0 ? 'bg-blue-600' : 'bg-gray-600'}  text-white text-sm active:scale-90 rounded-xl`}> {peningUploads > 0 ? `Uploading (${peningUploads})` : 'Save All'}</div>
                                     </div>
 
 

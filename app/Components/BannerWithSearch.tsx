@@ -4,6 +4,7 @@ import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
 import lottieSearch from '@/public/lottieSearch.json'
 import { Target } from 'lucide-react'
+import { commonDataList } from '../Constants/MyConstnats'
 
 
 const BannerWithSearch = () => {
@@ -65,7 +66,13 @@ const BannerWithSearch = () => {
 
                     </div>
 
-                    <input onKeyDown={(e)=>e.key=="Enter"?navigateToResultPage():null} value={querryText} onChange={(e) => setQuerryText(e.target.value)} placeholder='Search for Image and Videos' className='outline-none flex-1 text-xs' type="text" />
+                    <input list='search-suggestions' onKeyDown={(e)=>e.key=="Enter"?navigateToResultPage():null} value={querryText} onChange={(e) => setQuerryText(e.target.value)} placeholder='Search for Image and Videos' className='outline-none flex-1 text-xs' type="text" />
+                    <datalist id="search-suggestions">
+                        {commonDataList.map((data,i)=>(
+                            <option key={i} value={data}/>
+                        ))}
+                        
+                    </datalist>
                    
                         <div onClick={navigateToResultPage}  className='p-2 hover:bg-blue-700 bg-blue-500 active:scale-90 text-white cursor-pointer rounded-xl text-xs flex items-center select-none'>Search</div>
                    

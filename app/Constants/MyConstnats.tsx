@@ -11,8 +11,16 @@ export type fileProb={
     ai_Tags:string[],
     credits:string,
     collections:string,
-    
+    location:string,
     uploadProgress?:number,
     compressStatus?:string,
+    exifTimestamp?:string,
+    exifLocation?:string,
+    exifLocationName?:string,
 
 }
+
+export const commonDataList=[
+    'Biodiveristy',
+    'Exploration'
+]
