@@ -214,7 +214,10 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
     };
 
     const retryAiTags = async () => {
+        if(retryDialog.includes('Retrying')) return;
+
         setRetryDialog('Retrying... Do not close the window.')
+        console.log('retrying...')
     // 1. Destructure for clarity
     const { id, fileType } = currentAsset;
     const folder = fileType === "image" ? "Images" : "Videos";
