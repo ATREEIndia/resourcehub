@@ -223,7 +223,7 @@ const page = ({ params }: { params: Promise<{ query: string }> }) => {
     setDbImageData(matchedImages);
     setDbVideoData(matchedVideos);
 
-    const timer = setTimeout(() => setFiltering(false), 500);
+    const timer = setTimeout(() => setFiltering(false), 3000);
     return () => clearTimeout(timer);
 
 }, [dbData, searchQuerry]);
