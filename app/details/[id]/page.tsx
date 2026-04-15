@@ -214,7 +214,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
     };
 
     const retryAiTags = async () => {
-        setRetryDialog('Retrying...')
+        setRetryDialog('Retrying... Do not close the window.')
     // 1. Destructure for clarity
     const { id, fileType } = currentAsset;
     const folder = fileType === "image" ? "Images" : "Videos";
@@ -251,7 +251,7 @@ const uploadToFirebase = async (fileToUpload:any) => {
             tags: fileToUpload.tags,
             uploadedBy: fileToUpload.uploadedBy,
             fileName: fileToUpload.fileName,
-            location: fileToUpload.location,
+            location: fileToUpload.location ||"",
             exifLocation: fileToUpload.exifLocation ?? "",
             exifTimestamp: fileToUpload.exifTimestamp ?? "",
             exifLocationName: fileToUpload.exifLocationName ?? ""
@@ -353,7 +353,7 @@ const uploadToFirebase = async (fileToUpload:any) => {
                             <p onClick={retryAiTags} className={`${showRetry ? "flex" : 'hidden'} select-none  cursor-pointer text-xs px-2 py-1 active:scale-95 bg-amber-400 rounded-xl`}>Retry</p>
                         </div>
 
-                        {showRetry && <p className='text-xs select-none p-2'>{retryDialog}</p>
+                        {showRetry && <p className={`text-xs select-none p-2 ${retryDialog.includes('Retrying')?"animate-bounce mt-2":''}`}>{retryDialog}</p>
                         }
 
                         {!showRetry &&

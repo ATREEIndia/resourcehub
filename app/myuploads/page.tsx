@@ -62,8 +62,15 @@ const page = () => {
             <p className="mt-2 text-zinc-600 dark:text-zinc-400">
                 Manage and view your uploaded images and videos.
             </p>
-
-            <h1>Ai Tagging failed {failedAiTaggs}</h1>
+           
+           {failedAiTaggs>0 &&
+           <div className='w-full flex text-xs items-center gap-2 select-none'>
+             <div className=' p-2 px-4  bg-amber-400  rounded-2xl'>⚠︎ Ai Tagging failed {failedAiTaggs}</div>
+             <p>Please open the asssets with orange border and retry</p>
+           </div>
+           
+           }
+           
              
 
         </div>

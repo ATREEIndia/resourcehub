@@ -79,7 +79,7 @@ const MediaTile = ({ data,handleCollectionSelection,addALL, _isBookmarked=false 
 
             {/* if media is an image */}
             {mediaType === 'image' &&
-                <div  className={`${data.tags==='Thinking'?"border-2 border-red-400":""} w-full h-100 relative rounded-xl border p-4 py-10`}>
+                <div  className={`${data.tags==='Thinking'?"border-2 border-amber-400":""} w-full h-100 relative rounded-xl border p-4 py-10`}>
                     <div className='w-full h-full'>
 
 
@@ -119,7 +119,7 @@ const MediaTile = ({ data,handleCollectionSelection,addALL, _isBookmarked=false 
             {mediaType === "video" &&
 
 
-                <div  className='w-full h-full  border py-4 relative rounded-xl'>
+                <div  className={`${data.tags==='Thinking'?"border-2 border-amber-400":""} w-full h-full  border py-4 relative rounded-xl`}>
                     <div onClick={opneDetailsPage} className='p-4'>
                         <video
                            
