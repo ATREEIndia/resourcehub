@@ -23,22 +23,22 @@ const page = ({ params }: { params: Promise<{ query: string }> }) => {
     const [dbVideoData, setDbVideoData] = useState<any[]>([])
     const [newQuerry, setNewQuerry] = useState(querry)
     const [filtering, setFiltering] = useState(true);
-    const[triedLocationName, setTriedLocationName]=useState(false)
+    const [triedLocationName, setTriedLocationName] = useState(false)
 
 
     useEffect(() => {
         if (!dbData || triedLocationName) return
-        
+
         dbData.map((data) => {
 
-            if (data.exifLocation?.length>2 && data.exifLocationName === 'Error finding location' || data.exifLocationName === 'Location Unknown') {
+            if (data.exifLocation?.length > 2 && data.exifLocationName === 'Error finding location' || data.exifLocationName === 'Location Unknown') {
                 const latlong = data.exifLocation.split(',')
                 tryForLocationName(latlong, data.fileType, data.id)
 
             } else {
                 return
             }
-           
+
 
 
         })
@@ -51,8 +51,8 @@ const page = ({ params }: { params: Promise<{ query: string }> }) => {
     const tryForLocationName = async (latlong: string, fileType: string, id: string) => {
         const locationName = await getLocationName(latlong[0], latlong[1])
 
-        if (locationName==="Error") return;
-        console.log('locationName= '+ locationName)
+        if (locationName === "Error") return;
+        console.log('locationName= ' + locationName)
 
         const folder = fileType === 'image' ? 'Images' : 'Videos';
         const dbRef = ref(db, `${folder}/${id}`);
@@ -95,61 +95,141 @@ const page = ({ params }: { params: Promise<{ query: string }> }) => {
 
 
 
+    // useEffect(() => {
+    //     setFiltering(true);
+
+    //     // 1. Prepare the query: Normalize to handle simple plurals/singulars
+    //     const queryWords = searchQuerry
+    //         .trim()
+    //         .toLowerCase()
+    //         .split(/\s+/)
+    //         .filter((word) => word.length > 2);
+
+    //     // Helper to strip "s", "es", "ies" for fuzzy plural matching
+    //     const normalize = (word: string) =>
+    //         // word.replace(/ies$/, 'y').replace(/es$/, '').replace(/s$/, '').replace('and'," ").replace('or'," ").replace(','," ");
+    //         word.replace(/ies$/, 'y')
+    //             .replace(/es$/, '')
+    //             .replace(/s$/, '')
+    //             .replace(/\band\b/gi, ' ') // Matches "and" as a whole word, case-insensitive
+    //             .replace(/\bor\b/gi, ' ')  // Matches "or" as a whole word, case-insensitive
+    //             .replace(/,/g, ' ');       // Replaces all commas
+
+    //     // 2. Filter the data into temporary arrays
+    //     const matchedImages: any[] = [];
+    //     const matchedVideos: any[] = [];
+
+    //     dbData.forEach((item) => {
+    //         const checkMatch = (tagsString: string | undefined) => {
+    //             if (!tagsString) return false;
+
+    //             // Normalize tag string (remove commas, split into array)
+    //             const tags = tagsString.toLowerCase().replace(/,/g, " ").split(/\s+/);
+
+    //             return queryWords.some((qWord) => {
+    //                 const normQ = normalize(qWord);
+
+    //                 return tags.some((tag) => {
+    //                     const normTag = normalize(tag);
+    //                     // Check original match OR normalized match (singular/plural)
+    //                     return tag.includes(qWord) ||
+    //                         qWord.includes(tag) ||
+    //                         normTag.includes(normQ) ||
+    //                         normQ.includes(normTag);
+    //                 });
+    //             });
+    //         };
+
+    //         const isMatch = checkMatch(item.tags) || checkMatch(item.m_tags) || checkMatch(item.exifLocationName) || checkMatch(item.exifTimestamp) || checkMatch(item.location) || checkMatch(item.credits);
+
+    //         if (isMatch) {
+    //             if (item.fileType === 'image') matchedImages.push(item);
+    //             if (item.fileType === 'video') matchedVideos.push(item);
+    //         }
+    //     });
+
+    //     // 3. Update state once (prevents multiple re-renders)
+    //     setDbImageData(matchedImages);
+    //     setDbVideoData(matchedVideos);
+
+    //     const timer = setTimeout(() => setFiltering(false), 3000);
+    //     return () => clearTimeout(timer); // Cleanup timeout if dependencies change
+
+    // }, [dbData, searchQuerry]);
+
+
     useEffect(() => {
-        setFiltering(true);
+    if (!searchQuerry || searchQuerry.trim().length < 2) {
+       
+        setFiltering(false);
+        return;
+    }
 
-        // 1. Prepare the query: Normalize to handle simple plurals/singulars
-        const queryWords = searchQuerry
-            .trim()
-            .toLowerCase()
-            .split(/\s+/)
-            .filter((word) => word.length > 2);
+    setFiltering(true);
 
-        // Helper to strip "s", "es", "ies" for fuzzy plural matching
-        const normalize = (word: string) =>
-            word.replace(/ies$/, 'y').replace(/es$/, '').replace(/s$/, '');
+    const normalize = (word: string) =>
+        word.toLowerCase()
+            .replace(/ies$/, 'y')
+            .replace(/es$/, '')
+            .replace(/s$/, '');
 
-        // 2. Filter the data into temporary arrays
-        const matchedImages: any[] = [];
-        const matchedVideos: any[] = [];
+    // 1. Define common words to ignore
+    const stopWords = new Set(['and', 'or', 'the', 'with', 'for', 'in', 'at', 'a', 'an']);
 
-        dbData.forEach((item) => {
-            const checkMatch = (tagsString: string | undefined) => {
-                if (!tagsString) return false;
+    // 2. Prepare query: Clean, split, and filter out stop words
+    const queryWords = searchQuerry
+        .toLowerCase()
+        .replace(/,/g, ' ') 
+        .split(/\s+/)
+        .filter((word) => word.length > 2 && !stopWords.has(word)) // <--- Filter added here
+        .map(word => ({
+            original: word,
+            norm: normalize(word)
+        }));
 
-                // Normalize tag string (remove commas, split into array)
-                const tags = tagsString.toLowerCase().replace(/,/g, " ").split(/\s+/);
+    const matchedImages: any[] = [];
+    const matchedVideos: any[] = [];
 
-                return queryWords.some((qWord) => {
-                    const normQ = normalize(qWord);
+    // 3. Search logic
+    dbData.forEach((item) => {
+        const fieldsToSearch = [
+            item.tags, item.m_tags, item.exifLocationName, 
+            item.exifTimestamp, item.location, item.credits
+        ];
 
-                    return tags.some((tag) => {
-                        const normTag = normalize(tag);
-                        // Check original match OR normalized match (singular/plural)
-                        return tag.includes(qWord) ||
-                            qWord.includes(tag) ||
-                            normTag.includes(normQ) ||
-                            normQ.includes(normTag);
-                    });
+        const isMatch = fieldsToSearch.some((field) => {
+            if (!field) return false;
+
+            const tags = field.toLowerCase().replace(/,/g, " ").split(/\s+/).filter((t:string) => t.length > 0);
+            const normalizedTags = tags.map((t:string) => normalize(t));
+
+            return queryWords.some((q) => {
+                return tags.some((tag:string, index:number) => {
+                    const normTag = normalizedTags[index];
+                    return tag.includes(q.original) || 
+                           q.original.includes(tag) || 
+                           normTag.includes(q.norm) || 
+                           q.norm.includes(normTag);
                 });
-            };
-
-            const isMatch = checkMatch(item.tags) || checkMatch(item.m_tags) || checkMatch(item.exifLocationName) || checkMatch(item.exifTimestamp) || checkMatch(item.location) || checkMatch(item.credits);
-
-            if (isMatch) {
-                if (item.fileType === 'image') matchedImages.push(item);
-                if (item.fileType === 'video') matchedVideos.push(item);
-            }
+            });
         });
 
-        // 3. Update state once (prevents multiple re-renders)
-        setDbImageData(matchedImages);
-        setDbVideoData(matchedVideos);
+        if (isMatch) {
+            if (item.fileType === 'image') matchedImages.push(item);
+            else if (item.fileType === 'video') matchedVideos.push(item);
+        }
+    });
 
-        const timer = setTimeout(() => setFiltering(false), 3000);
-        return () => clearTimeout(timer); // Cleanup timeout if dependencies change
+    setDbImageData(matchedImages);
+    setDbVideoData(matchedVideos);
 
-    }, [dbData, searchQuerry]);
+    const timer = setTimeout(() => setFiltering(false), 500);
+    return () => clearTimeout(timer);
+
+}, [dbData, searchQuerry]);
+
+
+
 
 
 
@@ -158,7 +238,10 @@ const page = ({ params }: { params: Promise<{ query: string }> }) => {
 
 
     const handleNewSearch = () => {
-        setSearchQuerry(newQuerry)
+        if(newQuerry.length>2){
+                setSearchQuerry(newQuerry)
+        }
+    
 
 
     }
