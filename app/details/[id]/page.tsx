@@ -44,6 +44,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
             setAiTagArray(asset.tags.trim().split(',') || [])
             setCredit(asset.credits || '')
             setLocation(asset.location || '')
+            setLocationName(asset.exifLocationName)
 
             if (asset.m_tags.trim() === '') {
                 setManualTagArray([])
@@ -184,9 +185,9 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
             const response = await fetch(currentAsset.s3Url, {
                 method: 'GET',
                 mode: 'cors', // Explicitly ask for CORS
-                headers: {
-                    'Origin': window.location.origin // Some S3 configurations require this
-                }
+                // headers: {
+                //     'Origin': window.location.origin // Some S3 configurations require this
+                // }
             });
 
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
