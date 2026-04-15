@@ -79,7 +79,7 @@ const MediaTile = ({ data,handleCollectionSelection,addALL, _isBookmarked=false 
 
             {/* if media is an image */}
             {mediaType === 'image' &&
-                <div  className=' w-full h-100 relative rounded-xl border p-4 py-10'>
+                <div  className={`${data.tags==='Thinking'?"border-2 border-red-400":""} w-full h-100 relative rounded-xl border p-4 py-10`}>
                     <div className='w-full h-full'>
 
 

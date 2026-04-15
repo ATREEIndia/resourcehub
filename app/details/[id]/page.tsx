@@ -4,9 +4,10 @@ import { useMyContext } from '../../Context/MyContext'
 
 import Image from 'next/image'
 import { AlignRight, ArrowDownNarrowWide, ArrowUpNarrowWide, ArrowUpNarrowWideIcon, Download, Edit, LocateIcon, Package, Trash2Icon, View } from 'lucide-react'
-import { ref, remove, update } from 'firebase/database'
+import { ref, remove, set, update } from 'firebase/database'
 import { db, m_firestore } from '../../Components/MyFirebase'
 import { doc, setDoc } from 'firebase/firestore'
+import { fileProb } from '@/app/Constants/MyConstnats'
 
 
 const page = ({ params }: { params: Promise<{ id: string }> }) => {
@@ -27,8 +28,10 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
     const [credit, setCredit] = useState('')
     const [location, setLocation] = useState('')
     const [collectionList, setCollectionList] = useState<string[]>([])
-    const[refreshLocation, setRefreshLocation]=useState(false)
-    const [locationName, setLocationName]=useState(currentAsset?.exifLocationName)
+    const [refreshLocation, setRefreshLocation] = useState(false)
+    const [locationName, setLocationName] = useState(currentAsset?.exifLocationName)
+    const [showRetry, setShowRetry] = useState(false)
+    const[retryDialog, setRetryDialog]=useState('Failed to generate Ai Tags. Please retry')
 
     useEffect(() => {
         // Find the specific asset
@@ -45,50 +48,19 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
             if (asset.m_tags.trim() === '') {
                 setManualTagArray([])
             }
+            if (asset.tags === 'Thinking') {
+                setShowRetry(true)
+            }else{
+                 setShowRetry(false)
+            }
 
 
         }
     }, [dbData, assetID])
 
-    useEffect( ()=>{
+    
 
-        if(!currentAsset || !currentAsset.exifLocation) return
-        setLocationName(currentAsset.exifLocationName)
-
-        const latlong=currentAsset.exifLocation.split(',')
-        
-            upadteLocationName(latlong)
-            console.log('fetching location name')
-            
-          
-        
-
-
-    },[currentAsset, refreshLocation])
-
-    const upadteLocationName=async(latlong:string)=>{
-         const locationName= await getLocationName(latlong[0], latlong[1])
-         if(locationName.includes('Error')) return
-         setLocationName(locationName)
-
-
-    }
-
-    const getLocationName = async (lat: string, lon: string) => {
-        try {
-            const response = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
-            );
-            const data = await response.json();
-
-            // 'display_name' gives the full address
-            // 'address' object contains specific parts like city, state, or park name
-            return data.display_name || "Location Unknown";
-        } catch (error) {
-            //console.error("Error fetching location:", error);
-            return "Error finding location";
-        }
-    };
+    
 
     useEffect(() => {
         if (!fcData || !currentAsset) return
@@ -225,7 +197,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
 
             link.href = url;
             // Fallback for filename if currentAsset.fileName is missing
-            link.download = currentAsset.fileName || 'downloaded-image.jpg';
+            link.download = `${currentAsset.id}_${currentAsset.fileName}` || 'downloaded-image.jpg';
 
             document.body.appendChild(link);
             link.click();
@@ -234,11 +206,60 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
         } catch (error) {
-           // console.error("Download failed:", error);
+            // console.error("Download failed:", error);
             // Fallback: open in new tab if fetch fails
             window.open(currentAsset.s3Url, '_blank');
         }
     };
+
+    const retryAiTags = async () => {
+        setRetryDialog('Retrying...')
+    // 1. Destructure for clarity
+    const { id, fileType } = currentAsset;
+    const folder = fileType === "image" ? "Images" : "Videos";
+    const dataRef = ref(db, `${folder}/${id}`);
+
+    try {
+        // 2. Use await instead of .then() for cleaner flow
+        await remove(dataRef);
+        
+        // 3. Chain the next operation
+        await uploadToFirebase(currentAsset);
+        
+        console.log("Retry successful: Asset re-synced.");
+    } catch (e) {
+        console.error("Failed to retry AI tags:", e);
+        // Add user-facing error notification here if needed
+    }
+};
+
+const uploadToFirebase = async (fileToUpload:any) => {
+    const folder = fileToUpload.fileType === 'image' ? 'Images' : 'Videos';
+    const dbRef = ref(db, `${folder}/${fileToUpload.id}`);
+
+    try {
+        // 4. Using update() is smart—it only changes the keys provided 
+        // without overwriting the entire node if other keys exist.
+        await set(dbRef, {
+            id: fileToUpload.id,
+            url: fileToUpload.url,
+            s3Url: fileToUpload.s3Url,
+            credits: fileToUpload.credits,
+            fileType: fileToUpload.fileType,
+            m_tags: fileToUpload.m_tags, 
+            tags: fileToUpload.tags,
+            uploadedBy: fileToUpload.uploadedBy,
+            fileName: fileToUpload.fileName,
+            location: fileToUpload.location,
+            exifLocation: fileToUpload.exifLocation ?? "",
+            exifTimestamp: fileToUpload.exifTimestamp ?? "",
+            exifLocationName: fileToUpload.exifLocationName ?? ""
+        });
+    } catch (error) {
+        console.error("Firebase update failed:", error);
+        throw error; // Rethrow so the caller knows it failed
+    }
+};
 
     return (
 
@@ -289,7 +310,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
                         <p className='text-blue-500'>{currentAsset.exifTimestamp}</p>
                     </div>
 
-                    <div onClick={()=>setRefreshLocation(!refreshLocation)} className='flex gap-2'>
+                    <div onClick={() => setRefreshLocation(!refreshLocation)} className='flex gap-2'>
                         <h1>Exif-Location:</h1>
                         <p className='text-blue-500'>{currentAsset.exifLocation} <ArrowDownNarrowWide /> {locationName}</p>
                     </div>
@@ -326,14 +347,22 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
                     </div>
 
                     <div className='mt-5'>
-                        <p>🤖 Ai Tags</p>
+                        <div className='flex gap-2 items-center'>
+                            <p>🤖 Ai Tags</p>
+                            <p onClick={retryAiTags} className={`${showRetry ? "flex" : 'hidden'} select-none  cursor-pointer text-xs px-2 py-1 active:scale-95 bg-amber-400 rounded-xl`}>Retry</p>
+                        </div>
+
+                        {showRetry && <p className='text-xs select-none p-2'>{retryDialog}</p>
+                        }
+
+                        {!showRetry &&
                         <div className='flex gap-2 flex-wrap'>
                             {currentAsset.tags?.split(',').map((tag: string, i: number) => (
 
                                 <div key={i} className='text-xs p-2  bg-blue-100'>{tag}</div>
                             ))}
 
-                        </div>
+                        </div>}
 
                     </div>
 

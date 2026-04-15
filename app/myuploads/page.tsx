@@ -14,6 +14,7 @@ const page = () => {
     const[myImageAssetsData, setMyImageAssetsData]=useState<any[]>([])
     const[myVideoAssetsData, setMyVideoAssetsData]=useState<any[]>([])
     const[resultReady, setResultReady]=useState(false)
+    const[failedAiTaggs, setFailedAiTaggs]=useState(0)
     
 
     useEffect(() => {
@@ -38,6 +39,11 @@ const page = () => {
     setMyImageAssetsData(filteredData_img.reverse());
     setMyVideoAssetsData(filteredData_video.reverse());
 
+    const allData=[...filteredData_img,...filteredData_video];
+    const failedAi=allData.filter((file)=>file.tags==='Thinking')
+    setFailedAiTaggs(failedAi.length)
+
+
     setTimeout(() => {
         setResultReady(true)
         
@@ -56,6 +62,8 @@ const page = () => {
             <p className="mt-2 text-zinc-600 dark:text-zinc-400">
                 Manage and view your uploaded images and videos.
             </p>
+
+            <h1>Ai Tagging failed {failedAiTaggs}</h1>
              
 
         </div>

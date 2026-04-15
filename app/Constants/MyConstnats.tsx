@@ -24,3 +24,5 @@ export const commonDataList=[
     'Biodiveristy',
     'Exploration'
 ]
+
+export const locationIqAPI="https://us1.locationiq.com/v1/reverse?key=pk.ee92134ad8353c346b5cf44c13244650&"

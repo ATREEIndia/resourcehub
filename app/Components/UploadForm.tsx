@@ -1,7 +1,7 @@
 'use client'
 import { Circle, Loader, RotateCcw, Trash2, X } from 'lucide-react'
 import React, { useEffect, useRef, useState } from 'react'
-import { commonDataList, fileProb } from '../Constants/MyConstnats'
+import { commonDataList, fileProb, locationIqAPI } from '../Constants/MyConstnats'
 import { useMyContext } from '../Context/MyContext'
 import Image from 'next/image'
 import { ref, update } from 'firebase/database'
@@ -169,7 +169,7 @@ const UploadForm = ({ manageUploadForm }: probs) => {
     const getLocationName = async (lat: string, lon: string) => {
         try {
             const response = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
+               `${locationIqAPI}&lat=${String(lat).trim()}&lon=${String(lon).trim()}&format=json`
             );
             const data = await response.json();
 
@@ -680,7 +680,8 @@ const UploadForm = ({ manageUploadForm }: probs) => {
                                      <div className='p-2 bg-blue-50 text-xs rounded-xl mb-4 flex flex-col gap-1'>
                                         <h1 className='text-sm font-semibold'>Data from Image</h1>
                                         <p >Timestamp: <span className='text-blue-600'>{activeFile?.exifTimestamp}</span></p>
-                                        <p>Location: <span className='text-blue-600'>{activeFile?.exifLocationName}</span></p>
+                                        <p>Location: <span className='text-blue-600'>{activeFile?.exifLocation}</span></p>
+                                        <p>Address: <span className='text-blue-600'>{activeFile?.exifLocationName}</span></p>
                                      </div>
 
 
