@@ -22,7 +22,7 @@ const WhatsNew = () => {
     <div className='w-full h-full p-8'>
         <h1 className='font-semibold'>Whats New</h1>
 
-        <h1 className='text-gra-600 '>Latest Images and videos</h1>
+        <h1 className='text-gra-600 '>Check out Latest 12 Images and videos</h1>
 
         <ResultHero dbImageData={imgData} dbVideoData={videoData}/>
 
