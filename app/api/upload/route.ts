@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
         })
 
         //get presigned url
-        const signdUrl = await getSignedUrl(myS3Client, command, { expiresIn: 60 })
+        const signdUrl = await getSignedUrl(myS3Client, command, { expiresIn: 600 })
 
         const s3Url = `https://digispace-atree.s3.ap-south-1.amazonaws.com/${key}`
         let previewUrl = `https://digispace-atree.s3.ap-south-1.amazonaws.com/${key}`

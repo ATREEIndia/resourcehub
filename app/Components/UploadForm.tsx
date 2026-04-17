@@ -1,6 +1,6 @@
 'use client'
 import { Circle, Loader, RotateCcw, Trash2, X } from 'lucide-react'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { commonDataList, fileProb, locationIqAPI } from '../Constants/MyConstnats'
 import { useMyContext } from '../Context/MyContext'
 import Image from 'next/image'
@@ -26,17 +26,23 @@ const UploadForm = ({ manageUploadForm }: probs) => {
     const [manualTags, setManualTags] = useState<string[]>([])
     const [aiTags, setAiTags] = useState<string[]>([])
     const [credits, setCredits] = useState('')
-    const [peningUploads, setPendingUploads] = useState(0)
+    //const [peningUploads, setPendingUploads] = useState(0)
     const [currentLocation, setCurrentLocation] = useState('')
-  
-
-    useEffect(() => {
-        if (!selectedFiles) return
-        const pending = selectedFiles.filter((file) => file.uploadProgress && file.uploadProgress < 100).length
-        setPendingUploads(pending)
+    const [uploadPending, setUploadPending] = useState(selectedFiles.length)
+    const [importingFiles, setImportingFiles] = useState(false)
 
 
-    }, [selectedFiles])
+    // useEffect(() => {
+    //     if (!selectedFiles) return
+    //     const pending = selectedFiles.filter((file) => file.uploadProgress && file.uploadProgress < 100).length
+    //     setPendingUploads(pending)
+
+
+    // }, [selectedFiles])
+    const peningUploads = useMemo(() => {
+        return selectedFiles.filter(f => f.uploadProgress !== undefined && f.uploadProgress < 100).length;
+    }, [selectedFiles]);
+
 
     useEffect(() => {
         if (activeFile) {
@@ -44,14 +50,14 @@ const UploadForm = ({ manageUploadForm }: probs) => {
             setAiTags(activeFile.ai_Tags || [])
             setCredits(activeFile.credits || '')
             setCurrentLocation(activeFile.location || '')
-           
+
 
 
 
         }
     }, [activeFileIndex, dbData])
 
-   
+
 
     useEffect(() => {
         setSelectedFiles((prev) =>
@@ -108,8 +114,8 @@ const UploadForm = ({ manageUploadForm }: probs) => {
 
     const getFileType = (file: File) => {
         const exn = file.name.split('.').pop()?.toLowerCase()
-        if (['jpg', "jpeg", 'png', 'svg'].includes(exn || "")) return 'image'
-        if (['mp4', 'mov'].includes(exn || "")) return 'video'
+        if (['jpg', 'jpeg', 'png', 'svg', 'webp', 'gif'].includes(exn || "")) return 'image'
+        if (['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(exn || "")) return 'video'
         return 'unknown'
     }
 
@@ -134,30 +140,30 @@ const UploadForm = ({ manageUploadForm }: probs) => {
             console.log(`File: ${file.name}`);
             console.log(`Taken on: ${timestamp || 'No date found'}`);
             console.log(`Location: https://www.google.com/maps?q=${latitude}, ${longitude}`);
-             let location=''
-           let namedLocation="No location found";
-          
-            if(latitude && longitude){
-                  namedLocation= await getLocationName(latitude,longitude )
-                  location=`${latitude}, ${longitude}`
+            let location = ''
+            let namedLocation = "No location found";
+
+            if (latitude && longitude) {
+                namedLocation = await getLocationName(latitude, longitude)
+                location = `${latitude}, ${longitude}`
 
             }
 
-           
+
 
             return {
                 timestamp: timestamp || 'No data found',
                 exifLocation: location,
-                exitLocationName:namedLocation
+                exitLocationName: namedLocation
 
             }
 
             // Now you can store these in your state alongside the file
         } catch (error) {
             return {
-                timestamp:  'No data found',
+                timestamp: 'No data found',
                 exifLocation: '',
-                exitLocationName:'No location found'
+                exitLocationName: 'No location found'
 
             }
             console.error('Error reading EXIF:', error);
@@ -169,7 +175,7 @@ const UploadForm = ({ manageUploadForm }: probs) => {
     const getLocationName = async (lat: string, lon: string) => {
         try {
             const response = await fetch(
-               `${locationIqAPI}&lat=${String(lat).trim()}&lon=${String(lon).trim()}&format=json`
+                `${locationIqAPI}&lat=${String(lat).trim()}&lon=${String(lon).trim()}&format=json`
             );
             const data = await response.json();
 
@@ -191,19 +197,28 @@ const UploadForm = ({ manageUploadForm }: probs) => {
         }
     }
 
-
-
-    const addToSelectedFiles = (files: FileList | null) => {
+    const addToSelectedFiles = async (files: FileList | null) => {
         if (!files) return;
+        setImportingFiles(true)
 
         const fileArray = Array.from(files);
-        fileArray.map(async (file, i) => {
-            if (selectedFiles.some((f) => f.file.name === file.name && f.file.size === file.size)) return
+        const newlyProcessedFiles: fileProb[] = [];
 
-            const exif = await extractExif(file)
+        // Use a for...of loop to handle async/await properly and sequentially
+        for (let i = 0; i < fileArray.length; i++) {
+            const file = fileArray[i];
+
+            // 1. Check against current state AND files we just processed in this loop
+            const isDuplicate = selectedFiles.some((f) => f.file.name === file.name && f.file.size === file.size) ||
+                newlyProcessedFiles.some((f) => f.file.name === file.name && f.file.size === file.size);
+
+            if (isDuplicate || getFileType(file) === 'unknown') continue;
+
+            // 2. Extract EXIF (this is the slow part)
+            const exif = await extractExif(file);
 
             const newFile: fileProb = {
-                id: `${Date.now()}${i}`,
+                id: `${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`, // More unique ID
                 file: file,
                 localUrl: URL.createObjectURL(file),
                 s3Url: "",
@@ -216,14 +231,53 @@ const UploadForm = ({ manageUploadForm }: probs) => {
                 collections: '',
                 location: '',
                 exifLocation: exif?.exifLocation,
-                exifLocationName:exif?.exitLocationName,
+                exifLocationName: exif?.exitLocationName,
                 exifTimestamp: exif?.timestamp
+            };
 
-            }
-            setSelectedFiles((prev) => [...prev, newFile])
+            newlyProcessedFiles.push(newFile);
+        }
 
-        })
-    }
+        // 3. Single state update for all 300 files
+        setSelectedFiles((prev) => [...prev, ...newlyProcessedFiles]);
+        setImportingFiles(false)
+    };
+
+
+
+    // const addToSelectedFiles0 = (files: FileList | null) => {
+    //     if (!files) return;
+
+
+    //     const fileArray = Array.from(files);
+    //     fileArray.map(async (file, i) => {
+    //         if (selectedFiles.some((f) => f.file.name === file.name && f.file.size === file.size)) return
+    //         if (getFileType(file) === 'unknown') return;
+
+    //         const exif = await extractExif(file)
+
+    //         const newFile: fileProb = {
+    //             id: `${Date.now()}${i}`,
+    //             file: file,
+    //             localUrl: URL.createObjectURL(file),
+    //             s3Url: "",
+    //             previewUrl: "",
+    //             fileType: getFileType(file),
+    //             uploadedBy: user?.email || "",
+    //             m_Tags: [],
+    //             ai_Tags: [],
+    //             credits: '',
+    //             collections: '',
+    //             location: '',
+    //             exifLocation: exif?.exifLocation,
+    //             exifLocationName: exif?.exitLocationName,
+    //             exifTimestamp: exif?.timestamp
+
+    //         }
+    //         setSelectedFiles((prev) => [...prev, newFile])
+
+    //     })
+    // }
 
 
     const removeFromSelectedFiles = (id: string) => {
@@ -232,64 +286,180 @@ const UploadForm = ({ manageUploadForm }: probs) => {
         }))
     }
 
-    const handleNext = () => {
-        setIsNext(true)
-        selectedFiles.map((file, i) => {
-            handleUploadToS3(file)
+    // const handleNext = () => {
+    //     setIsNext(true)
+    //     selectedFiles.map((file, i) => {
+    //         handleUploadToS3(file)
 
-        })
+    //     })
 
-    }
+    // }
+    const handleNext = async () => {
+        setIsNext(true);
 
+        const BATCH_SIZE = 4; // Drop it slightly to be safe
+        // Create a copy to avoid mutating the state-bound array
+        const filesArray = [...selectedFiles];
+        let completedCount = 0;
+
+        for (let i = 0; i < filesArray.length; i += BATCH_SIZE) {
+            const currentBatch = filesArray.slice(i, i + BATCH_SIZE);
+
+            console.log(`Starting batch: ${i} to ${i + BATCH_SIZE}`);
+
+            // Await the entire batch to finish before the loop continues
+            await Promise.all(
+                currentBatch.map(async (file) => {
+                    try {
+                        await handleUploadToS3(file);
+                        completedCount++;
+                        const filesRemaining = filesArray.length - completedCount;
+                        setUploadPending(filesRemaining);
+
+                    } catch (err) {
+                        console.error("Batch error on file:", file.id, err);
+                    }
+                })
+            );
+
+            // Optional: Add a 50ms "breather" for the Chrome UI thread to breathe
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+
+            console.log(`Finished batch starting at index ${i} -> ${filesArray.length} in ${selectedFiles.length} `);
+        }
+        setUploadPending(0)
+    };
+
+
+    // const handleUploadToS3 = async (file: fileProb) => {
+
+    //     try {
+    //         const res = await fetch('/api/upload', {
+    //             method: 'POST',
+    //             body: JSON.stringify({
+    //                 fileName: file.id,
+    //                 fileMimeType: file.file.type,
+    //                 folderName: `${file.fileType}s`
+    //             })
+
+    //         })
+    //         const { signedUrl, s3Url, previewUrl } = await res.json();
+    //         console.log('previewUrl' + previewUrl)
+
+    //         setSelectedFiles((prev) => prev.map((f, i) => {
+    //             if (f.id === file.id) {
+    //                 return {
+    //                     ...f,
+    //                     s3Url: s3Url,
+    //                     previewUrl: previewUrl
+    //                 }
+    //             } else {
+    //                 return f
+    //             }
+    //         }))
+
+    //         const updatedFile = {
+    //             ...file,
+    //             s3Url: s3Url,
+    //             previewUrl: previewUrl
+    //         }
+
+    //         try {
+    //             await uploadToS3(signedUrl, updatedFile)
+
+    //         } catch (e) {
+    //             console.log(e)
+    //         }
+
+
+    //     } catch (e) {
+
+    //     }
+
+    // }
 
     const handleUploadToS3 = async (file: fileProb) => {
-
         try {
             const res = await fetch('/api/upload', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' }, // Added missing header
                 body: JSON.stringify({
                     fileName: file.id,
                     fileMimeType: file.file.type,
                     folderName: `${file.fileType}s`
                 })
+            });
 
-            })
+            if (!res.ok) throw new Error("Failed to get signed URL");
+
             const { signedUrl, s3Url, previewUrl } = await res.json();
-            console.log('previewUrl' + previewUrl)
 
-            setSelectedFiles((prev) => prev.map((f, i) => {
-                if (f.id === file.id) {
-                    return {
-                        ...f,
-                        s3Url: s3Url,
-                        previewUrl: previewUrl
-                    }
-                } else {
-                    return f
-                }
-            }))
+            // Update state with URLs before starting S3 upload
+            setSelectedFiles((prev) => prev.map((f) =>
+                f.id === file.id ? { ...f, s3Url, previewUrl } : f
+            ));
 
-            const updatedFile = {
-                ...file,
-                s3Url: s3Url,
-                previewUrl: previewUrl
-            }
+            const updatedFile = { ...file, s3Url, previewUrl };
 
-            try {
-                await uploadToS3(signedUrl, updatedFile)
-
-            } catch (e) {
-                console.log(e)
-            }
+            // This now correctly waits for the S3 upload to finish
+            await uploadToS3(signedUrl, updatedFile);
 
 
         } catch (e) {
-
+            console.error(`Error uploading ${file.id}:`, e);
+            // Set progress to -1 or something to indicate error in UI
+            setSelectedFiles((prev) => prev.map((f) =>
+                f.id === file.id ? { ...f, uploadProgress: -1 } : f
+            ));
         }
+    };
 
-    }
 
-    const uploadToS3 = async (signedUrl: string, fileToUpload: fileProb) => {
+
+
+    const uploadToS3 = (signedUrl: string, fileToUpload: fileProb) => {
+        // 1. Return the promise so you can 'await' it
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+
+            xhr.addEventListener('load', () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    // Trigger completion logic ONLY on success load, not progress
+                    if (fileToUpload.fileType === 'video') poleForCompressedVideo(fileToUpload);
+                    if (fileToUpload.fileType === 'image') uploadToFirebase(fileToUpload);
+                    resolve(xhr.status);
+                } else {
+                    reject("Upload Failed with code " + xhr.status);
+                }
+            });
+
+            xhr.addEventListener('error', () => reject('Network Error'));
+
+            xhr.upload.addEventListener('progress', (event) => {
+                if (event.lengthComputable) {
+                    const progressPercentage = Math.round((event.loaded / event.total) * 100);
+
+                    // Optimization: Only update state if progress is a multiple of 5
+                    // or it's 100%, to reduce React re-renders.
+                    if (progressPercentage % 10 === 0 || progressPercentage === 100) {
+                        setSelectedFiles((prev) =>
+                            prev.map((f) =>
+                                f.id === fileToUpload.id ? { ...f, uploadProgress: progressPercentage } : f
+                            )
+                        );
+                    }
+                }
+            });
+
+            xhr.open('PUT', signedUrl);
+            // Typo fix: 'Content-Type'
+            xhr.setRequestHeader('Content-Type', fileToUpload.file.type || 'application/octet-stream');
+            xhr.send(fileToUpload.file);
+        });
+    };
+
+    const uploadToS30 = async (signedUrl: string, fileToUpload: fileProb) => {
         new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
 
@@ -415,6 +585,9 @@ const UploadForm = ({ manageUploadForm }: probs) => {
 
 
     const uploadToFirebase = async (fileToUpload: fileProb) => {
+
+        
+
         const folder = fileToUpload.fileType === 'image' ? 'Images' : 'Videos';
         const dbRef = ref(db, `${folder}/${fileToUpload.id}`);
         try {
@@ -508,7 +681,7 @@ const UploadForm = ({ manageUploadForm }: probs) => {
     }
 
     const finalUploadToFirebase = () => {
-        if (selectedFiles.some((file) => file.uploadProgress && file.uploadProgress < 100 || file.fileType == 'video' && file.compressStatus !== 'Compressed Successfully' || peningUploads > 0)) {
+        if (selectedFiles.some((file) => file.uploadProgress && file.uploadProgress < 100 || file.fileType == 'video' && file.compressStatus !== 'Compressed Successfully' || uploadPending > 0)) {
             alert('Please wait for all the file to be processed.')
             return
 
@@ -553,6 +726,18 @@ const UploadForm = ({ manageUploadForm }: probs) => {
                                 className='w-full hover:bg-blue-50 hover:border-blue-200 cursor-pointer border-2 border-dashed h-25 rounded-xl text-gray-600 flex flex-col items-center justify-center'>
                                 <p>Drag and drop or click to choose file</p>
                                 <p className='text-xs'>Only Images and Videos are supported</p>
+                                {importingFiles &&
+                                    <div className='flex gap-2 text-blue-500 items-center'>
+                                        <Loader className='animate-spin' />
+                                        <p className='text-xs'>Importing Files...</p>
+
+                                    </div>
+                                }
+
+                                {selectedFiles.length > 0 &&
+                                    <p className='text-xs p-2'>Imported {selectedFiles.length} files </p>
+                                }
+
 
                                 <input
                                     ref={inputRef}
@@ -568,7 +753,7 @@ const UploadForm = ({ manageUploadForm }: probs) => {
                             {selectedFiles.length > 0 &&
                                 <div>
 
-                                    <div className='w-full p-4 bg-gray-200 rounded-xl grid grid-cols-3 gap-5 max-h-100 overflow-y-scroll'>
+                                    <div className='w-full p-4 mt-3 bg-gray-200 rounded-xl grid grid-cols-3 gap-5 max-h-100 overflow-y-scroll'>
                                         {selectedFiles.map((file, i) => (
                                             <div key={i} className='border flex items-center justify-center relative'>
                                                 {file.fileType === 'image' && <Image className='object-contain h-auto' unoptimized alt='' src={file.localUrl} width={150} height={100} />}
@@ -602,7 +787,7 @@ const UploadForm = ({ manageUploadForm }: probs) => {
 
 
                             <div className='sm:w-1/3 max-h-2/3 py-4'>
-                                <h1 className='font-semibold mb-2 px-4'>Selected Files</h1>
+                                <h1 className='font-semibold mb-2 px-4'>Selected Files {selectedFiles.length}</h1>
 
 
                                 <div className='flex flex-col gap-3 h-full max-h-[70vh] overflow-y-scroll py-2 w-full px-4   '>
@@ -625,7 +810,7 @@ const UploadForm = ({ manageUploadForm }: probs) => {
                                                         <p>{file.uploadProgress || 0}%</p>
                                                     </div>
 
-                                                    <div className='bg-blue-800 h-1 rounded-xl' style={{ width: `${file.uploadProgress}%` }}></div>
+                                                    <div className='bg-blue-800 h-1 rounded-xl w-2' style={{ width: `${file.uploadProgress}%` }}></div>
 
 
                                                 </div>
@@ -675,21 +860,21 @@ const UploadForm = ({ manageUploadForm }: probs) => {
                                 </div>
 
                                 <div className='w-full p-2 flex-1 h-full max-h-2/3 overflow-y-scroll no-scrollbar '>
-                                     
-                                     {/* exif data */}
-                                     <div className='p-2 bg-blue-50 text-xs rounded-xl mb-4 flex flex-col gap-1'>
+
+                                    {/* exif data */}
+                                    <div className='p-2 bg-blue-50 text-xs rounded-xl mb-4 flex flex-col gap-1'>
                                         <h1 className='text-sm font-semibold'>Data from Image</h1>
                                         <p >Timestamp: <span className='text-blue-600'>{activeFile?.exifTimestamp}</span></p>
                                         <p>Location: <span className='text-blue-600'>{activeFile?.exifLocation}</span></p>
                                         <p>Address: <span className='text-blue-600'>{activeFile?.exifLocationName}</span></p>
-                                     </div>
+                                    </div>
 
 
 
 
                                     <h1 className='text-sm font-semibold select-none'>Add Meta Data</h1>
 
-                                    
+
 
 
 
@@ -753,7 +938,7 @@ const UploadForm = ({ manageUploadForm }: probs) => {
                                     <input value={activeFile.credits} onChange={(e) => setCredits(e.target.value)} className='p-2 text-xs outline-none border w-full rounded-xl border-blue-200' type="text" />
 
                                     <div onClick={finalUploadToFirebase} className='w-full p-2 flex justify-end select-none'>
-                                        <div className={`p-2 ${peningUploads === 0 ? 'bg-blue-600' : 'bg-gray-600'}  text-white text-sm active:scale-90 rounded-xl`}> {peningUploads > 0 ? `Uploading (${peningUploads})` : 'Save All'}</div>
+                                        <div className={`p-2 ${uploadPending === 0 ? 'bg-blue-600' : 'bg-gray-600'}  text-white text-sm active:scale-90 rounded-xl`}> {uploadPending > 0 ? `Uploading (${uploadPending})` : 'Save All'}</div>
                                     </div>
 
 
