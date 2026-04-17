@@ -32,6 +32,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
     const [locationName, setLocationName] = useState(currentAsset?.exifLocationName)
     const [showRetry, setShowRetry] = useState(false)
     const [retryDialog, setRetryDialog] = useState('Failed to generate Ai Tags. Please retry')
+    const[downloading, setDownloading]=useState(false)
 
     useEffect(() => {
         // Find the specific asset
@@ -178,40 +179,81 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
 
 
     }
-
-
+    
     const handleDownload = async () => {
-        try {
-            const response = await fetch(currentAsset.s3Url, {
-                method: 'GET',
-                mode: 'cors', // Explicitly ask for CORS
-                // headers: {
-                //     'Origin': window.location.origin // Some S3 configurations require this
-                // }
-            });
+        if(downloading) return
 
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        setDownloading(true)
 
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
+    try {
+        // ADD A CACHE BUSTER (?t=...)
+        const cacheBusterUrl = `${currentAsset.s3Url}${currentAsset.s3Url.includes('?') ? '&' : '?'}t=${Date.now()}`;
+        
+        const response = await fetch(cacheBusterUrl, {
+            method: 'GET',
+            mode: 'cors',
+        });
 
-            link.href = url;
-            // Fallback for filename if currentAsset.fileName is missing
-            link.download = `${currentAsset.id}_${currentAsset.fileName}` || 'downloaded-image.jpg';
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-            document.body.appendChild(link);
-            link.click();
+        const blob = await response.blob();
+        
+        // Force octet-stream so the browser doesn't try to "preview" it
+        const forcedBlob = new Blob([blob], { type: 'application/octet-stream' });
+        const url = window.URL.createObjectURL(forcedBlob);
 
-            // Cleanup
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-        } catch (error) {
-            // console.error("Download failed:", error);
-            // Fallback: open in new tab if fetch fails
-            window.open(currentAsset.s3Url, '_blank');
-        }
-    };
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = currentAsset.fileName || 'downloaded-file';
+
+        document.body.appendChild(link);
+        link.click();
+
+        // Cleanup
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        setDownloading(false)
+    } catch (error) {
+        setDownloading(false)
+        console.error("Download failed:", error);
+        // If this still fails, the issue is 100% S3 CORS or permissions
+        window.open(currentAsset.s3Url, '_blank');
+    }
+};
+
+
+    // const handleDownload0 = async () => {
+    //     try {
+    //         const response = await fetch(currentAsset.s3Url, {
+    //             method: 'GET',
+    //             mode: 'cors', // Explicitly ask for CORS
+    //             // headers: {
+    //             //     'Origin': window.location.origin // Some S3 configurations require this
+    //             // }
+    //         });
+
+    //         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+    //         const blob = await response.blob();
+    //         const url = window.URL.createObjectURL(blob);
+    //         const link = document.createElement('a');
+
+    //         link.href = url;
+    //         // Fallback for filename if currentAsset.fileName is missing
+    //         link.download = `${currentAsset.id}_${currentAsset.fileName}` || 'downloaded-image.jpg';
+
+    //         document.body.appendChild(link);
+    //         link.click();
+
+    //         // Cleanup
+    //         document.body.removeChild(link);
+    //         window.URL.revokeObjectURL(url);
+    //     } catch (error) {
+    //         // console.error("Download failed:", error);
+    //         // Fallback: open in new tab if fetch fails
+    //         window.open(currentAsset.s3Url, '_blank');
+    //     }
+    // };
 
     const retryAiTags = async () => {
         if (retryDialog.includes('Retrying')) return;
@@ -274,7 +316,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
                     {currentAsset.fileType === 'image' &&
                         <div className="relative w-full h-full">
                             <Image
-                            unoptimized
+                                unoptimized
                                 src={currentAsset.url}
                                 alt="Asset description"
                                 fill
@@ -284,7 +326,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
                             // The blurDataURL above is a tiny grey pixel; replace with a real base64 for better looks
                             />
                         </div>
-                        
+
                     }
                     {currentAsset.fileType === 'video' &&
                         <video src={currentAsset.url} controls className='w-full h-full object-contain' />
@@ -393,14 +435,20 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
 
 
 
-                    <div className='w-full  flex'>
+                    <div className='w-full  flex gap-2'>
 
                         <div className='mt-5 select-none active:scale-95 cursor-pointer flex items-center gap-2 p-2 hover:bg-blue-600 text-white rounded-xl bg-blue-400'>
-                            <View size={15} />
-                            <div onClick={async () => await handleDownload()}>
-                                Download Original File
+                            <Download size={15} />
+                            <div className={`${downloading?'animate-bounce':''}`} onClick={async () => await handleDownload()}>
+                                {downloading?"Preparing downlaod...": 'Download Original File'}
                             </div>
-                            {/* <a href={currentAsset.s3Url} target='_blank' download={'sdsd.jpg'}>Open Original File</a> */}
+                            
+                        </div>
+                        <div className='mt-5 border hover:bg-blue-100 select-none active:scale-95 cursor-pointer flex items-center gap-2 p-2  text-blue-500 rounded-xl bg-white'>
+                            <View size={15} />
+                            
+                             <a href={currentAsset.s3Url} target='_blank' >View Original File</a> 
+                            
                         </div>
 
 
