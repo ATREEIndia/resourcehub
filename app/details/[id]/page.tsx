@@ -31,7 +31,7 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
     const [refreshLocation, setRefreshLocation] = useState(false)
     const [locationName, setLocationName] = useState(currentAsset?.exifLocationName)
     const [showRetry, setShowRetry] = useState(false)
-    const[retryDialog, setRetryDialog]=useState('Failed to generate Ai Tags. Please retry')
+    const [retryDialog, setRetryDialog] = useState('Failed to generate Ai Tags. Please retry')
 
     useEffect(() => {
         // Find the specific asset
@@ -51,17 +51,17 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
             }
             if (asset.tags === 'Thinking') {
                 setShowRetry(true)
-            }else{
-                 setShowRetry(false)
+            } else {
+                setShowRetry(false)
             }
 
 
         }
     }, [dbData, assetID])
 
-    
 
-    
+
+
 
     useEffect(() => {
         if (!fcData || !currentAsset) return
@@ -214,56 +214,56 @@ const page = ({ params }: { params: Promise<{ id: string }> }) => {
     };
 
     const retryAiTags = async () => {
-        if(retryDialog.includes('Retrying')) return;
+        if (retryDialog.includes('Retrying')) return;
 
         setRetryDialog('Retrying... Do not close the window.')
         console.log('retrying...')
-    // 1. Destructure for clarity
-    const { id, fileType } = currentAsset;
-    const folder = fileType === "image" ? "Images" : "Videos";
-    const dataRef = ref(db, `${folder}/${id}`);
+        // 1. Destructure for clarity
+        const { id, fileType } = currentAsset;
+        const folder = fileType === "image" ? "Images" : "Videos";
+        const dataRef = ref(db, `${folder}/${id}`);
 
-    try {
-        // 2. Use await instead of .then() for cleaner flow
-        await remove(dataRef);
-        
-        // 3. Chain the next operation
-        await uploadToFirebase(currentAsset);
-        
-        console.log("Retry successful: Asset re-synced.");
-    } catch (e) {
-        console.error("Failed to retry AI tags:", e);
-        // Add user-facing error notification here if needed
-    }
-};
+        try {
+            // 2. Use await instead of .then() for cleaner flow
+            await remove(dataRef);
 
-const uploadToFirebase = async (fileToUpload:any) => {
-    const folder = fileToUpload.fileType === 'image' ? 'Images' : 'Videos';
-    const dbRef = ref(db, `${folder}/${fileToUpload.id}`);
+            // 3. Chain the next operation
+            await uploadToFirebase(currentAsset);
 
-    try {
-        // 4. Using update() is smart—it only changes the keys provided 
-        // without overwriting the entire node if other keys exist.
-        await set(dbRef, {
-            id: fileToUpload.id,
-            url: fileToUpload.url,
-            s3Url: fileToUpload.s3Url,
-            credits: fileToUpload.credits,
-            fileType: fileToUpload.fileType,
-            m_tags: fileToUpload.m_tags, 
-            tags: fileToUpload.tags,
-            uploadedBy: fileToUpload.uploadedBy,
-            fileName: fileToUpload.fileName,
-            location: fileToUpload.location ||"",
-            exifLocation: fileToUpload.exifLocation ?? "",
-            exifTimestamp: fileToUpload.exifTimestamp ?? "",
-            exifLocationName: fileToUpload.exifLocationName ?? ""
-        });
-    } catch (error) {
-        console.error("Firebase update failed:", error);
-        throw error; // Rethrow so the caller knows it failed
-    }
-};
+            console.log("Retry successful: Asset re-synced.");
+        } catch (e) {
+            console.error("Failed to retry AI tags:", e);
+            // Add user-facing error notification here if needed
+        }
+    };
+
+    const uploadToFirebase = async (fileToUpload: any) => {
+        const folder = fileToUpload.fileType === 'image' ? 'Images' : 'Videos';
+        const dbRef = ref(db, `${folder}/${fileToUpload.id}`);
+
+        try {
+            // 4. Using update() is smart—it only changes the keys provided 
+            // without overwriting the entire node if other keys exist.
+            await set(dbRef, {
+                id: fileToUpload.id,
+                url: fileToUpload.url,
+                s3Url: fileToUpload.s3Url,
+                credits: fileToUpload.credits,
+                fileType: fileToUpload.fileType,
+                m_tags: fileToUpload.m_tags,
+                tags: fileToUpload.tags,
+                uploadedBy: fileToUpload.uploadedBy,
+                fileName: fileToUpload.fileName,
+                location: fileToUpload.location || "",
+                exifLocation: fileToUpload.exifLocation ?? "",
+                exifTimestamp: fileToUpload.exifTimestamp ?? "",
+                exifLocationName: fileToUpload.exifLocationName ?? ""
+            });
+        } catch (error) {
+            console.error("Firebase update failed:", error);
+            throw error; // Rethrow so the caller knows it failed
+        }
+    };
 
     return (
 
@@ -272,7 +272,19 @@ const uploadToFirebase = async (fileToUpload:any) => {
 
                 <div className='w-full h-full max-h-[80vh]'>
                     {currentAsset.fileType === 'image' &&
-                        <img src={currentAsset.url} alt="" className='w-full h-full object-contain' />
+                        <div className="relative w-full h-full">
+                            <Image
+                            unoptimized
+                                src={currentAsset.url}
+                                alt="Asset description"
+                                fill
+                                className="object-contain"
+                                placeholder="blur"
+                                blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZWRlZGVkIj48L3JlY3Q+PHJlY3QgaWQ9InNoaW1tZXIiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZykiaT48L3JlY3Q+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIwJSI+PHN0b3Agb2Zmc2V0PSIyMCU4IiBzdG9wLWNvbG9yPSIjZWRlZGVkIiBzdG9wLW9wYWNpdHk9IjEiPjwvc3RvcD48c3RvcCBvZmZzZXQ9IjUwJSIgc3RvcC1jb2xvcD0iI2Y2ZjdmOCIgc3RvcC1vcGFjaXR5PSIxIj48L3N0b3A+PHN0b3Agb2Zmc2V0PSI4MCUiIHN0b3AtY29sb3I9IiNlZGVkZWQiIHN0b3Atb3BhY2l0ePSIxIj48L3N0b3A+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PGFuaW1hdGUgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bGluazpocmVmPSIjc2hpbW1lciIgYXR0cmlidXRlTmFtZT0ieCIgZnJvbT0iLTEwMCUiIHRvPSIxMDAlIiBkdXI9IjFzIiByZXBlYXRDb3VudD0iaW5kZWZpbmV0ZSIvPjwvc3ZnPg=="
+                            // The blurDataURL above is a tiny grey pixel; replace with a real base64 for better looks
+                            />
+                        </div>
+                        
                     }
                     {currentAsset.fileType === 'video' &&
                         <video src={currentAsset.url} controls className='w-full h-full object-contain' />
@@ -356,17 +368,17 @@ const uploadToFirebase = async (fileToUpload:any) => {
                             <p onClick={retryAiTags} className={`${showRetry ? "flex" : 'hidden'} select-none  cursor-pointer text-xs px-2 py-1 active:scale-95 bg-amber-400 rounded-xl`}>Retry</p>
                         </div>
 
-                        {showRetry && <p className={`text-xs select-none p-2 ${retryDialog.includes('Retrying')?"animate-bounce mt-2":''}`}>{retryDialog}</p>
+                        {showRetry && <p className={`text-xs select-none p-2 ${retryDialog.includes('Retrying') ? "animate-bounce mt-2" : ''}`}>{retryDialog}</p>
                         }
 
                         {!showRetry &&
-                        <div className='flex gap-2 flex-wrap'>
-                            {currentAsset.tags?.split(',').map((tag: string, i: number) => (
+                            <div className='flex gap-2 flex-wrap'>
+                                {currentAsset.tags?.split(',').map((tag: string, i: number) => (
 
-                                <div key={i} className='text-xs p-2  bg-blue-100'>{tag}</div>
-                            ))}
+                                    <div key={i} className='text-xs p-2  bg-blue-100'>{tag}</div>
+                                ))}
 
-                        </div>}
+                            </div>}
 
                     </div>
 

@@ -32,7 +32,7 @@ export default function RootLayout({
       lang="en"
       className={`${getpoppins.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col" suppressHydrationWarning={true} >
         <MyContextProvider>
           <Navbar/>
           {children}

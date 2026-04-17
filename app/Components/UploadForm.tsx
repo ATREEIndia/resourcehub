@@ -584,9 +584,7 @@ const UploadForm = ({ manageUploadForm }: probs) => {
     }
 
 
-    const uploadToFirebase = async (fileToUpload: fileProb) => {
-
-        
+    const uploadToFirebase = async (fileToUpload: fileProb) => {        
 
         const folder = fileToUpload.fileType === 'image' ? 'Images' : 'Videos';
         const dbRef = ref(db, `${folder}/${fileToUpload.id}`);

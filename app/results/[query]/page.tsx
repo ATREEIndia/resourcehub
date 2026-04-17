@@ -95,138 +95,73 @@ const page = ({ params }: { params: Promise<{ query: string }> }) => {
 
 
 
-    // useEffect(() => {
-    //     setFiltering(true);
-
-    //     // 1. Prepare the query: Normalize to handle simple plurals/singulars
-    //     const queryWords = searchQuerry
-    //         .trim()
-    //         .toLowerCase()
-    //         .split(/\s+/)
-    //         .filter((word) => word.length > 2);
-
-    //     // Helper to strip "s", "es", "ies" for fuzzy plural matching
-    //     const normalize = (word: string) =>
-    //         // word.replace(/ies$/, 'y').replace(/es$/, '').replace(/s$/, '').replace('and'," ").replace('or'," ").replace(','," ");
-    //         word.replace(/ies$/, 'y')
-    //             .replace(/es$/, '')
-    //             .replace(/s$/, '')
-    //             .replace(/\band\b/gi, ' ') // Matches "and" as a whole word, case-insensitive
-    //             .replace(/\bor\b/gi, ' ')  // Matches "or" as a whole word, case-insensitive
-    //             .replace(/,/g, ' ');       // Replaces all commas
-
-    //     // 2. Filter the data into temporary arrays
-    //     const matchedImages: any[] = [];
-    //     const matchedVideos: any[] = [];
-
-    //     dbData.forEach((item) => {
-    //         const checkMatch = (tagsString: string | undefined) => {
-    //             if (!tagsString) return false;
-
-    //             // Normalize tag string (remove commas, split into array)
-    //             const tags = tagsString.toLowerCase().replace(/,/g, " ").split(/\s+/);
-
-    //             return queryWords.some((qWord) => {
-    //                 const normQ = normalize(qWord);
-
-    //                 return tags.some((tag) => {
-    //                     const normTag = normalize(tag);
-    //                     // Check original match OR normalized match (singular/plural)
-    //                     return tag.includes(qWord) ||
-    //                         qWord.includes(tag) ||
-    //                         normTag.includes(normQ) ||
-    //                         normQ.includes(normTag);
-    //                 });
-    //             });
-    //         };
-
-    //         const isMatch = checkMatch(item.tags) || checkMatch(item.m_tags) || checkMatch(item.exifLocationName) || checkMatch(item.exifTimestamp) || checkMatch(item.location) || checkMatch(item.credits);
-
-    //         if (isMatch) {
-    //             if (item.fileType === 'image') matchedImages.push(item);
-    //             if (item.fileType === 'video') matchedVideos.push(item);
-    //         }
-    //     });
-
-    //     // 3. Update state once (prevents multiple re-renders)
-    //     setDbImageData(matchedImages);
-    //     setDbVideoData(matchedVideos);
-
-    //     const timer = setTimeout(() => setFiltering(false), 3000);
-    //     return () => clearTimeout(timer); // Cleanup timeout if dependencies change
-
-    // }, [dbData, searchQuerry]);
-
 
     useEffect(() => {
-    if (!searchQuerry || searchQuerry.trim().length < 2) {
-       
-        setFiltering(false);
-        return;
-    }
+        // 1. Guard clause: Minimum 2 characters
+        if (!searchQuerry || searchQuerry.trim().length < 2) {
+            setFiltering(false);
+            // If  want to reset data when search is cleared:
+            // setDbImageData(dbData.filter(i => i.fileType === 'image'));
+            return;
+        }
 
-    setFiltering(true);
+        setFiltering(true);
 
-    const normalize = (word: string) =>
-        word.toLowerCase()
-            .replace(/ies$/, 'y')
-            .replace(/es$/, '')
-            .replace(/s$/, '');
+        // normalising the words to avoud plural and singualr conflicts
 
-    // 1. Define common words to ignore
-    const stopWords = new Set(['and', 'or', 'the', 'with', 'for', 'in', 'at', 'a', 'an']);
+        const normalize = (word: string) =>
+            word.toLowerCase()
+                .replace(/ies$/, 'y')
+                .replace(/es$/, '')
+                .replace(/s$/, '');
 
-    // 2. Prepare query: Clean, split, and filter out stop words
-    const queryWords = searchQuerry
-        .toLowerCase()
-        .replace(/,/g, ' ') 
-        .split(/\s+/)
-        .filter((word) => word.length > 2 && !stopWords.has(word)) // <--- Filter added here
-        .map(word => ({
-            original: word,
-            norm: normalize(word)
-        }));
 
-    const matchedImages: any[] = [];
-    const matchedVideos: any[] = [];
+        // excluding common stop words
+        const stopWords = new Set(['and', 'or', 'the', 'with', 'for', 'in', 'at', 'a', 'an']);
 
-    // 3. Search logic
-    dbData.forEach((item) => {
-        const fieldsToSearch = [
-            item.tags, item.m_tags, item.exifLocationName, 
-            item.exifTimestamp, item.location, item.credits
-        ];
+        const queryWords = searchQuerry
+            .toLowerCase()
+            .replace(/,/g, ' ')
+            .split(/\s+/)
+            .filter((word) => word.length >= 2 && !stopWords.has(word))
+            .map(word => ({
+                original: word,
+                norm: normalize(word)
+            }));
 
-        const isMatch = fieldsToSearch.some((field) => {
-            if (!field) return false;
+        const matchedImages: any[] = [];
+        const matchedVideos: any[] = [];
 
-            const tags = field.toLowerCase().replace(/,/g, " ").split(/\s+/).filter((t:string) => t.length > 0);
-            const normalizedTags = tags.map((t:string) => normalize(t));
+        dbData.forEach((item) => {
+            // Collect all text fields into one searchable string or array
+            const searchBlob = [
+                item.tags, item.m_tags, item.exifLocationName,
+                item.exifTimestamp, item.location, item.credits
+            ].filter(Boolean).join(" ").toLowerCase();
 
-            return queryWords.some((q) => {
-                return tags.some((tag:string, index:number) => {
-                    const normTag = normalizedTags[index];
-                    return tag.includes(q.original) || 
-                           q.original.includes(tag) || 
-                           normTag.includes(q.norm) || 
-                           q.norm.includes(normTag);
-                });
+            console.log(searchBlob)
+
+            // 2. Optimized Match Logic
+            const isMatch = queryWords.some((q) => {
+                // Check if any part of the searchBlob contains the full query word
+                // This prevents "no" matching "nobin" because "no".includes("nobin") is false
+                const normalizedBlob = normalize(searchBlob);
+
+                return searchBlob.includes(q.original) || normalizedBlob.includes(q.norm);
             });
+
+            if (isMatch) {
+                item.fileType === 'image' ? matchedImages.push(item) : matchedVideos.push(item);
+            }
         });
 
-        if (isMatch) {
-            if (item.fileType === 'image') matchedImages.push(item);
-            else if (item.fileType === 'video') matchedVideos.push(item);
-        }
-    });
+        setDbImageData(matchedImages);
+        setDbVideoData(matchedVideos);
 
-    setDbImageData(matchedImages);
-    setDbVideoData(matchedVideos);
+        const timer = setTimeout(() => setFiltering(false), 2500); // Reduced to 500ms for snappier feel
+        return () => clearTimeout(timer);
 
-    const timer = setTimeout(() => setFiltering(false), 3000);
-    return () => clearTimeout(timer);
-
-}, [dbData, searchQuerry]);
+    }, [dbData, searchQuerry]);
 
 
 
@@ -238,10 +173,10 @@ const page = ({ params }: { params: Promise<{ query: string }> }) => {
 
 
     const handleNewSearch = () => {
-        if(newQuerry.length>2){
-                setSearchQuerry(newQuerry)
+        if (newQuerry.length > 2) {
+            setSearchQuerry(newQuerry)
         }
-    
+
 
 
     }

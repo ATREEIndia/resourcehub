@@ -49,7 +49,8 @@ const Navbar = () => {
                     alt="resourcHub" // Replace with actual name for SEO
                     width={150}
                     height={150}
-                    className="object-contain"
+                    className="h-7 w-auto"
+                   // className="object-contain"
                     priority // Ensures the logo loads immediately as a key branding element
                     unoptimized // Necessary if using external hosting or specific static exports
                 />
